@@ -8,7 +8,6 @@
 	{
 		Hazel::Log::Init();
 		HZ_CORE_WARN("Initialized log system!")
-		HZ_INFO("Hello World! Value = {0}", 5)
 
 		auto app = Hazel::CreateApplication();
 		app->Run();
