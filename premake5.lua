@@ -66,16 +66,21 @@ project "Hazel"
 		}
 
 	filter "configurations:Debug"
-		defines "HZ_DEBUG"
 		symbols "On"
+		
+		defines
+		{
+			"HZ_DEBUG",
+			"HZ_ENABLE_ASSERTS"
+		}
 
 	filter "configurations:Release"
-		defines "HZ_RELEASE"
 		optimize "On"
+		defines "HZ_RELEASE"
 
 	filter "configurations:Dist"
-		defines "HZ_DIST"
 		optimize "On"
+		defines "HZ_DIST"
 
 project "Sandbox"
 	location "Sandbox"
