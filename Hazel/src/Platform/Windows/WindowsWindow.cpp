@@ -5,6 +5,8 @@
 #include "Hazel/Events/MouseEvent.h"
 #include "Hazel/Events/KeyEvent.h"
 
+#include <glad/glad.h>
+
 namespace Hazel {
 
 	static bool s_GLFWInitialized = false;
@@ -52,6 +54,9 @@ namespace Hazel {
 		glfwMakeContextCurrent(m_Window);
 		glfwSetWindowUserPointer(m_Window, &m_Data);
 		SetVSync(true);
+		
+		int status = gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
+		HZ_CORE_ASSERT(status, "Failed to initialize GLAD")
 
 		//
 		// Set GLFW callbacks

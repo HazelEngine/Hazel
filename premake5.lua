@@ -16,8 +16,10 @@ outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 IncludeDir = {}
 IncludeDir["spdlog"] = "Hazel/vendor/spdlog/include/"
 IncludeDir["GLFW"] = "Hazel/vendor/GLFW/include"
+IncludeDir["GLAD"] = "Hazel/vendor/GLAD/include"
 
 include "Hazel/vendor/GLFW"
+include "Hazel/vendor/GLAD"
 
 project "Hazel"
 	location "Hazel"
@@ -40,12 +42,14 @@ project "Hazel"
 	{
 		"%{prj.name}/src",
 		"%{IncludeDir.spdlog}",
-		"%{IncludeDir.GLFW}"
+		"%{IncludeDir.GLFW}",
+		"%{IncludeDir.GLAD}"
 	}
 
 	links
 	{
 		"GLFW",
+		"GLAD",
 		"opengl32.lib"
 	}
 
@@ -57,7 +61,8 @@ project "Hazel"
 		defines
 		{
 			"HZ_PLATFORM_WINDOWS",
-			"HZ_BUILD_DLL"
+			"HZ_BUILD_DLL",
+			"GLFW_INCLUDE_NONE"
 		}
 
 		postbuildcommands
@@ -101,7 +106,7 @@ project "Sandbox"
 
 	includedirs
 	{
-		"Hazel/vendor/spdlog/include/",
+		"%{IncludeDir.spdlog}",
 		"Hazel/src/"
 	}
 
