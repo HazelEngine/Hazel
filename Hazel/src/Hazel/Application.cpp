@@ -3,6 +3,8 @@
 
 #include <glad/glad.h>
 
+#include "Input.h"
+
 namespace Hazel {
 
 	Application* Application::s_Instance = nullptr;
