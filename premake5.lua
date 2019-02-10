@@ -1,6 +1,5 @@
 workspace "Hazel"
 	startproject "Sandbox"
-
 	architecture "x64"
 
 	configurations
@@ -27,6 +26,7 @@ project "Hazel"
 	location "Hazel"
 	kind "SharedLib"
 	language "C++"
+	staticruntime "Off"
 
 	targetdir ("bin/" .. outputdir .. "/%{prj.name}/")
 	objdir ("bin-int/" .. outputdir .. "/%{prj.name}/")
@@ -59,7 +59,6 @@ project "Hazel"
 
 	filter "system:windows"
 		cppdialect "C++17"
-		staticruntime "On"
 		systemversion "latest"
 
 		defines
@@ -71,33 +70,29 @@ project "Hazel"
 
 		postbuildcommands
 		{
-			("{COPY} %{cfg.buildtarget.relpath} ../bin/" .. outputdir .. "/Sandbox/")
+			("{COPY} %{cfg.buildtarget.relpath} \"../bin/" .. outputdir .. "/Sandbox/\"")
 		}
 
 	filter "configurations:Debug"
-		buildoptions "/MDd"
+		defines "HZ_DEBUG"
+		runtime "Debug"
 		symbols "On"
-		
-		defines
-		{
-			"HZ_DEBUG",
-			"HZ_ENABLE_ASSERTS"
-		}
 
 	filter "configurations:Release"
-		buildoptions "/MD"
-		optimize "On"
 		defines "HZ_RELEASE"
+		runtime "Release"
+		optimize "On"
 
 	filter "configurations:Dist"
-		buildoptions "/MD"
-		optimize "On"
 		defines "HZ_DIST"
+		runtime "Release"
+		optimize "On"
 
 project "Sandbox"
 	location "Sandbox"
 	kind "ConsoleApp"
 	language "C++"
+	staticruntime "Off"
 
 	targetdir ("bin/" .. outputdir .. "/%{prj.name}/")
 	objdir ("bin-int/" .. outputdir .. "/%{prj.name}/")
@@ -121,7 +116,6 @@ project "Sandbox"
 
 	filter "system:windows"
 		cppdialect "C++17"
-		staticruntime "On"
 		systemversion "latest"
 
 		defines
@@ -130,21 +124,16 @@ project "Sandbox"
 		}
 
 	filter "configurations:Debug"
-		buildoptions "/MDd"
+		defines "HZ_DEBUG"
+		runtime "Debug"
 		symbols "On"
 
-		defines
-		{
-			"HZ_DEBUG",
-			"HZ_ENABLE_ASSERTS"
-		}
-
 	filter "configurations:Release"
-		buildoptions "/MD"
-		optimize "On"
 		defines "HZ_RELEASE"
+		runtime "Release"
+		optimize "On"
 
 	filter "configurations:Dist"
-		buildoptions "/MD"
-		optimize "On"
 		defines "HZ_DIST"
+		runtime "Release"
+		optimize "On"
