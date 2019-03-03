@@ -111,6 +111,7 @@ project "Sandbox"
 	{
 		"%{IncludeDir.spdlog}",
 		"%{IncludeDir.GLM}",
+		"%{IncludeDir.ImGui}",
 		"Hazel/src/"
 	}
 
