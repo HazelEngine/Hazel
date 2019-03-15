@@ -5,6 +5,13 @@
 
 #include "Input.h"
 
+// TODO: Remove this!
+#include "D3D12Renderer.h"
+Hazel::Renderer* renderer;
+#define GLFW_EXPOSE_NATIVE_WIN32
+#include <GLFW/glfw3.h>
+#include <GLFW/glfw3native.h>
+
 namespace Hazel {
 
 	Application* Application::s_Instance = nullptr;
@@ -17,8 +24,35 @@ namespace Hazel {
 		m_Window = std::unique_ptr<Window>(Window::Create());
 		m_Window->SetEventCallback(HZ_BIND_EVENT_FN(Application::OnEvent));
 
-		m_ImGuiLayer = new ImGuiLayer();
-		PushOverlay(m_ImGuiLayer);
+		//m_ImGuiLayer = new ImGuiLayer();
+		//PushOverlay(m_ImGuiLayer);
+
+		// TODO: Remove this!
+		GLFWwindow* window = static_cast<GLFWwindow*>(m_Window->GetNativeWindow());
+		HWND native = glfwGetWin32Window(window);
+
+		renderer = new D3D12Renderer(GetWindow(), native);
+		renderer->Initialize();
+		HZ_CORE_INFO("D3D12: {0}", renderer->GetGpuInfo().Print())
+
+		// As meshes estão fazendo seu próprio gerenciamento
+		// de VertexStride, sem levar em consideração o já
+		// definido pelo RenderPass!
+		auto cube = Mesh::BuildCube(renderer, 5.0f);
+
+		RenderPass::CreateInfo rpInfo =
+		{
+			RenderPass::eDrawSync,
+			Mesh::eTriangleStrip,
+			Mesh::GetVertexInput3D(), // Não faz efeito nas meshes, apenas no INPUT LAYOUT!
+			sizeof(Mesh::Vertex3D), // Não faz efeito nas meshes, apenas no INPUT LAYOUT!
+			ivec2(m_Window->GetWidth(), m_Window->GetHeight()),
+			Color::Black,
+			false,
+			1
+		};
+		RenderPass* rp = renderer->CreateRenderPass(nullptr, rpInfo);
+		rp->OnRecord = [cube](Command* cmd) { cube->Draw(cmd); };
 	}
 
 	Application::~Application()
@@ -29,16 +63,15 @@ namespace Hazel {
 	{
 		while (m_Running)
 		{
-			glClearColor(1.0f, 0.0f, 1.0f, 1.0f);
-			glClear(GL_COLOR_BUFFER_BIT);
+			renderer->Display();
 
 			for (Layer* layer : m_LayerStack)
 				layer->OnUpdate();
 
-			m_ImGuiLayer->Begin();
-			for (Layer* layer : m_LayerStack)
-				layer->OnImGuiRender();
-			m_ImGuiLayer->End();
+			//m_ImGuiLayer->Begin();
+			//for (Layer* layer : m_LayerStack)
+			//	layer->OnImGuiRender();
+			//m_ImGuiLayer->End();
 
 			m_Window->OnUpdate();
 		}
@@ -68,7 +101,7 @@ namespace Hazel {
 		m_LayerStack.PushOverlay(overlay);
 		overlay->OnAttach();
 	}
-
+	
 	bool Application::OnWindowClose(WindowCloseEvent& e)
 	{
 		m_Running = false;

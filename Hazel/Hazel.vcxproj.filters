@@ -13,6 +13,9 @@
     <Filter Include="src\Hazel\ImGui">
       <UniqueIdentifier>{1AE138B3-866C-A677-8F7D-296CFB870278}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\Hazel\Rendering">
+      <UniqueIdentifier>{3DAD58C1-A90E-36CF-327C-7C819EDC6C8E}</UniqueIdentifier>
+    </Filter>
     <Filter Include="src\Platform">
       <UniqueIdentifier>{21CA02E5-0D2D-9289-B6B2-CA3FA2F45D0C}</UniqueIdentifier>
     </Filter>
@@ -84,8 +87,35 @@
     <ClInclude Include="src\Hazel\Log.h">
       <Filter>src\Hazel</Filter>
     </ClInclude>
+    <ClInclude Include="src\Hazel\MathDef.h">
+      <Filter>src\Hazel</Filter>
+    </ClInclude>
     <ClInclude Include="src\Hazel\MouseButtonCodes.h">
       <Filter>src\Hazel</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Hazel\Rendering\Buffer.h">
+      <Filter>src\Hazel\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Hazel\Rendering\Color.h">
+      <Filter>src\Hazel\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Hazel\Rendering\Command.h">
+      <Filter>src\Hazel\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Hazel\Rendering\Format.h">
+      <Filter>src\Hazel\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Hazel\Rendering\Mesh.h">
+      <Filter>src\Hazel\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Hazel\Rendering\RenderPass.h">
+      <Filter>src\Hazel\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Hazel\Rendering\Renderer.h">
+      <Filter>src\Hazel\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Hazel\Rendering\Texture.h">
+      <Filter>src\Hazel\Rendering</Filter>
     </ClInclude>
     <ClInclude Include="src\Hazel\Window.h">
       <Filter>src\Hazel</Filter>
@@ -1204,6 +1234,12 @@
     </ClCompile>
     <ClCompile Include="src\Hazel\Log.cpp">
       <Filter>src\Hazel</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Hazel\Rendering\Color.cpp">
+      <Filter>src\Hazel\Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Hazel\Rendering\Mesh.cpp">
+      <Filter>src\Hazel\Rendering</Filter>
     </ClCompile>
     <ClCompile Include="src\Platform\Windows\WindowsInput.cpp">
       <Filter>src\Platform\Windows</Filter>

@@ -7,16 +7,17 @@
 #include <functional>
 
 #include <string>
-#include <sstream>
 #include <vector>
 #include <map>
-#include <unordered_map>
-#include <unordered_set>
 
 #include <inttypes.h>
 
-#include "Hazel/Log.h"
-
 #ifdef HZ_PLATFORM_WINDOWS
-	#include <Windows.h>
+	#define WIN32_LEAN_AND_MEAN
+	#include <windows.h>
+	#include <wrl.h>
+	#include <dxgi1_4.h>
+	#include <d3dcompiler.h>
+	#include <d3d12.h>
+	#include "d3dx12.h"
 #endif

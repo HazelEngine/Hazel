@@ -23,6 +23,80 @@ include "Hazel/vendor/GLFW"
 include "Hazel/vendor/GLAD"
 include "Hazel/vendor/ImGui"
 
+project "D3D12Renderer"
+	location "D3D12Renderer"
+	kind "SharedLib"
+	language "C++"
+	staticruntime "Off"
+
+	targetdir ("bin/" .. outputdir .. "/%{prj.name}/")
+	objdir ("bin-int/" .. outputdir .. "/%{prj.name}/")
+
+	pchheader "hzpch.h"
+	pchsource "D3D12Renderer/src/hzpch.cpp"
+
+	files
+	{
+		"%{prj.name}/src/**.h",
+		"%{prj.name}/src/**.cpp"
+	}
+
+	includedirs
+	{
+		"%{prj.name}/src",
+		"%{prj.name}/vendor",
+		"Hazel/src",
+
+		"%{IncludeDir.GLFW}",
+		"%{IncludeDir.spdlog}",
+		"%{IncludeDir.GLM}",
+		"C:/Program Files (x86)/Windows Kits/10/Include/10.0.15063.0/shared",
+		"C:/Program Files (x86)/Windows Kits/10/Include/10.0.15063.0/um"
+	}
+
+	libdirs
+	{
+		"C:/Program Files (x86)/Windows Kits/10/Lib/10.0.15063.0/um/x64"
+	}
+
+	links
+	{
+		"GLFW",
+		"d3d12.lib",
+		"dxgi.lib",
+		"d3dcompiler.lib"
+	}
+
+	filter "system:windows"
+		cppdialect "C++17"
+		systemversion "latest"
+
+		defines
+		{
+			"HZ_PLATFORM_WINDOWS",
+			"HZ_BUILD_DLL"
+		}
+
+		postbuildcommands
+		{
+			("{COPY} %{cfg.buildtarget.relpath} \"../bin/" .. outputdir .. "/Sandbox/\"")
+		}
+
+	filter "configurations:Debug"
+		defines "HZ_DEBUG"
+		runtime "Debug"
+		symbols "On"
+
+	filter "configurations:Release"
+		defines "HZ_RELEASE"
+		runtime "Release"
+		optimize "On"
+
+	filter "configurations:Dist"
+		defines "HZ_DIST"
+		runtime "Release"
+		optimize "On"
+
 project "Hazel"
 	location "Hazel"
 	kind "SharedLib"
@@ -46,6 +120,7 @@ project "Hazel"
 	includedirs
 	{
 		"%{prj.name}/src",
+		"D3D12Renderer/src",
 		"%{IncludeDir.spdlog}",
 		"%{IncludeDir.GLFW}",
 		"%{IncludeDir.GLAD}",
@@ -55,6 +130,7 @@ project "Hazel"
 
 	links
 	{
+		"D3D12Renderer",
 		"GLFW",
 		"GLAD",
 		"ImGui",
@@ -112,7 +188,7 @@ project "Sandbox"
 		"%{IncludeDir.spdlog}",
 		"%{IncludeDir.GLM}",
 		"%{IncludeDir.ImGui}",
-		"Hazel/src/"
+		"Hazel/src"
 	}
 
 	links
