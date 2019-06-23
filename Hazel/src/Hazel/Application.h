@@ -7,10 +7,6 @@
 #include "Events/ApplicationEvent.h"
 #include "ImGui/ImGuiLayer.h"
 
-#include "Renderer/Shader.h"
-#include "Renderer/Buffer.h"
-#include "Renderer/VertexArray.h"
-
 namespace Hazel {
 
 	class HAZEL_API Application
@@ -37,12 +33,6 @@ namespace Hazel {
 		ImGuiLayer* m_ImGuiLayer;
 		LayerStack m_LayerStack;
 		bool m_Running = true;
-
-		std::shared_ptr<Shader> m_Shader;
-		std::shared_ptr<VertexArray> m_VertexArray;
-
-		std::shared_ptr<Shader> m_SquareShader;
-		std::shared_ptr<VertexArray> m_SquareVA;
 
 		static Application* s_Instance;
 	};
