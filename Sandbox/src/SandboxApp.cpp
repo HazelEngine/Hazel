@@ -5,7 +5,8 @@
 class ExampleLayer : public Hazel::Layer
 {
 public:
-	ExampleLayer() : Layer("Example")
+	ExampleLayer()
+		: Layer("Example"), m_Camera(-1.6f, 1.6f, -0.9f, 0.9f)
 	{
 		// Vertex array
 		{
@@ -65,10 +66,12 @@ public:
 
 				out vec4 v_Color;
 
+				uniform mat4 u_ViewProjection;
+
 				void main()
 				{
 					v_Color = a_Color;
-					gl_Position = vec4(a_Position, 1.0f);
+					gl_Position = u_ViewProjection * vec4(a_Position, 1.0f);
 				}
 			)";
 
@@ -92,10 +95,12 @@ public:
 
 				out vec4 v_Color;
 
+				uniform mat4 u_ViewProjection;
+
 				void main()
 				{
 					v_Color = vec4(0.25f, 0.95f, 0.71f, 1.0f);
-					gl_Position = vec4(a_Position, 1.0f);
+					gl_Position = u_ViewProjection * vec4(a_Position, 1.0f);
 				}
 			)";
 
@@ -106,14 +111,12 @@ public:
 
 	void OnUpdate() override
 	{
-		Hazel::Renderer::BeginScene();
+		m_Camera.SetPosition({ 0.5f, 0.5f, 0.0f });
+		m_Camera.SetRotation(45.0f);
 
-		m_SquareShader->Bind();
-		Hazel::Renderer::Submit(m_SquareVA);
-
-		m_Shader->Bind();
-		Hazel::Renderer::Submit(m_VertexArray);
-
+		Hazel::Renderer::BeginScene(m_Camera);
+		Hazel::Renderer::Submit(m_SquareShader, m_SquareVA);
+		Hazel::Renderer::Submit(m_Shader, m_VertexArray);
 		Hazel::Renderer::EndScene();
 
 		if (Hazel::Input::IsKeyPressed(HZ_KEY_TAB))
@@ -135,6 +138,8 @@ public:
 	}
 
 private:
+	Hazel::OrthographicCamera m_Camera;
+
 	std::shared_ptr<Hazel::Shader> m_Shader;
 	std::shared_ptr<Hazel::VertexArray> m_VertexArray;
 
