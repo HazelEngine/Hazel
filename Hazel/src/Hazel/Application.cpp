@@ -2,6 +2,7 @@
 #include "Application.h"
 
 #include "Input.h"
+#include "KeyCodes.h"
 #include "Renderer/Renderer.h"
 
 namespace Hazel {
@@ -40,6 +41,9 @@ namespace Hazel {
 			m_ImGuiLayer->End();
 
 			m_Window->OnUpdate();
+
+			if (Input::IsKeyPressed(HZ_KEY_ESCAPE))
+				OnWindowClose(WindowCloseEvent());
 		}
 	}
 
