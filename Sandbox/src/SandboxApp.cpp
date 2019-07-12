@@ -6,7 +6,7 @@ class ExampleLayer : public Hazel::Layer
 {
 public:
 	ExampleLayer()
-		: Layer("Example"), m_Camera(-1.6f, 1.6f, -0.9f, 0.9f)
+		: Layer("Example"), m_Camera(-1.6f, 1.6f, -0.9f, 0.9f), m_CameraPosition(0.0f)
 	{
 		// Vertex array
 		{
@@ -111,18 +111,34 @@ public:
 
 	void OnUpdate() override
 	{
-		m_Camera.SetPosition({ 0.5f, 0.5f, 0.0f });
-		m_Camera.SetRotation(45.0f);
+		if (Hazel::Input::IsKeyPressed(HZ_KEY_A)) {
+			m_CameraPosition.x -= m_CameraMoveSpeed;
+		}
+		else if (Hazel::Input::IsKeyPressed(HZ_KEY_D)) {
+			m_CameraPosition.x += m_CameraMoveSpeed;
+		}
+
+		if (Hazel::Input::IsKeyPressed(HZ_KEY_W)) {
+			m_CameraPosition.y += m_CameraMoveSpeed;
+		}
+		else if (Hazel::Input::IsKeyPressed(HZ_KEY_S)) {
+			m_CameraPosition.y -= m_CameraMoveSpeed;
+		}
+
+		if (Hazel::Input::IsKeyPressed(HZ_KEY_Q)) {
+			m_CameraRotation += m_CameraRotationSpeed;
+		}
+		else if (Hazel::Input::IsKeyPressed(HZ_KEY_E)) {
+			m_CameraRotation -= m_CameraRotationSpeed;
+		}
+
+		m_Camera.SetPosition(m_CameraPosition);
+		m_Camera.SetRotation(m_CameraRotation);
 
 		Hazel::Renderer::BeginScene(m_Camera);
 		Hazel::Renderer::Submit(m_SquareShader, m_SquareVA);
 		Hazel::Renderer::Submit(m_Shader, m_VertexArray);
 		Hazel::Renderer::EndScene();
-
-		if (Hazel::Input::IsKeyPressed(HZ_KEY_TAB))
-		{
-			HZ_TRACE("Tab key is pressed!")
-		}
 	}
 
 	void OnImGuiRender() override
@@ -134,11 +150,15 @@ public:
 
 	void OnEvent(Hazel::Event& event) override
 	{
-		//HZ_TRACE("{0}", event)
 	}
 
 private:
+	float m_CameraMoveSpeed = 0.1f;
+	float m_CameraRotationSpeed = 2.0f;
+
 	Hazel::OrthographicCamera m_Camera;
+	glm::vec3 m_CameraPosition;
+	float m_CameraRotation = 0.0f;
 
 	std::shared_ptr<Hazel::Shader> m_Shader;
 	std::shared_ptr<Hazel::VertexArray> m_VertexArray;
