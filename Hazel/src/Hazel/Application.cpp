@@ -3,7 +3,10 @@
 
 #include "Input.h"
 #include "KeyCodes.h"
+#include "Core/Timestep.h"
 #include "Renderer/Renderer.h"
+
+#include <GLFW/glfw3.h>
 
 namespace Hazel {
 
@@ -29,11 +32,15 @@ namespace Hazel {
 	{
 		while (m_Running)
 		{
+			float time = (float)glfwGetTime();
+			Timestep timestamp = time - m_LastFrameTime;
+			m_LastFrameTime = time;
+
 			RenderCommand::SetClearColor({ 0.1f, 0.1f, 0.1f, 1.0f });
 			RenderCommand::Clear();
 
 			for (Layer* layer : m_LayerStack)
-				layer->OnUpdate();
+				layer->OnUpdate(timestamp);
 
 			m_ImGuiLayer->Begin();
 			for (Layer* layer : m_LayerStack)
