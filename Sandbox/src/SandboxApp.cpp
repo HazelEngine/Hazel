@@ -23,7 +23,7 @@ public:
 				 0.5f, -0.5f, 0.0f,    0.2f, 0.3f, 0.8f, 1.0f,
 				 0.0f,  0.5f, 0.0f,    0.8f, 0.8f, 0.2f, 1.0f
 			};
-			std::shared_ptr<Hazel::VertexBuffer> vertexBuffer;
+			Hazel::Ref<Hazel::VertexBuffer> vertexBuffer;
 			vertexBuffer.reset(Hazel::VertexBuffer::Create(vertices, _countof(vertices)));
 			vertexBuffer->SetLayout({
 				{ Hazel::ShaderDataType::Float3, "a_Position" },
@@ -32,7 +32,7 @@ public:
 			m_VertexArray->AddVertexBuffer(vertexBuffer);
 
 			unsigned int indices[3] = { 0, 1, 2 };
-			std::shared_ptr<Hazel::IndexBuffer> indexBuffer;
+			Hazel::Ref<Hazel::IndexBuffer> indexBuffer;
 			indexBuffer.reset(Hazel::IndexBuffer::Create(indices, _countof(vertices)));
 			m_VertexArray->SetIndexBuffer(indexBuffer);
 		}
@@ -48,7 +48,7 @@ public:
 				 0.5f,  0.5f, 0.0f,
 				-0.5f,  0.5f, 0.0f
 			};
-			std::shared_ptr<Hazel::VertexBuffer> squareVB;
+			Hazel::Ref<Hazel::VertexBuffer> squareVB;
 			squareVB.reset(Hazel::VertexBuffer::Create(squareVertices, _countof(squareVertices)));
 			squareVB->SetLayout({
 				{ Hazel::ShaderDataType::Float3, "a_Position" }
@@ -56,7 +56,7 @@ public:
 			m_SquareVA->AddVertexBuffer(squareVB);
 
 			uint32_t squareIndices[6] = { 0, 1, 2, 2, 3, 0 };
-			std::shared_ptr<Hazel::IndexBuffer> squareIB;
+			Hazel::Ref<Hazel::IndexBuffer> squareIB;
 			squareIB.reset(Hazel::IndexBuffer::Create(squareIndices, _countof(squareIndices)));
 			m_SquareVA->SetIndexBuffer(squareIB);
 		}
@@ -223,11 +223,11 @@ private:
 	glm::vec3 m_SquareColor = { 0.2f, 0.3f, 0.8f };
 	float m_SquareMoveSpeed = 5.0f;
 
-	std::shared_ptr<Hazel::Shader> m_Shader;
-	std::shared_ptr<Hazel::VertexArray> m_VertexArray;
+	Hazel::Ref<Hazel::Shader> m_Shader;
+	Hazel::Ref<Hazel::VertexArray> m_VertexArray;
 
-	std::shared_ptr<Hazel::Shader> m_FlatColorShader;
-	std::shared_ptr<Hazel::VertexArray> m_SquareVA;
+	Hazel::Ref<Hazel::Shader> m_FlatColorShader;
+	Hazel::Ref<Hazel::VertexArray> m_SquareVA;
 };
 
 class Sandbox : public Hazel::Application
