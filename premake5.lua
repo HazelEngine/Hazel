@@ -13,11 +13,12 @@ outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 
 -- Include directories relative to root folder (solution directory)
 IncludeDir = {}
-IncludeDir["spdlog"] = "Hazel/vendor/spdlog/include/"
-IncludeDir["GLFW"] = "Hazel/vendor/GLFW/include"
-IncludeDir["GLAD"] = "Hazel/vendor/GLAD/include"
-IncludeDir["GLM"] = "Hazel/vendor/GLM"
-IncludeDir["ImGui"] = "Hazel/vendor/ImGui"
+IncludeDir["spdlog"]    = "Hazel/vendor/spdlog/include/"
+IncludeDir["GLFW"]      = "Hazel/vendor/GLFW/include"
+IncludeDir["GLAD"]      = "Hazel/vendor/GLAD/include"
+IncludeDir["stb"]       = "Hazel/vendor/stb"
+IncludeDir["GLM"]       = "Hazel/vendor/GLM"
+IncludeDir["ImGui"]     = "Hazel/vendor/ImGui"
 
 group "ThirdParty"
 	include "Hazel/vendor/GLFW"
@@ -41,6 +42,8 @@ project "Hazel"
 	{
 		"%{prj.name}/src/**.h",
 		"%{prj.name}/src/**.cpp",
+		"%{prj.name}/vendor/stb/**.h",
+		"%{prj.name}/vendor/stb/**.cpp",
 		"%{prj.name}/vendor/GLM/glm/**.hpp",
 		"%{prj.name}/vendor/GLM/glm/**.inl"
 	}
@@ -51,6 +54,7 @@ project "Hazel"
 		"%{IncludeDir.spdlog}",
 		"%{IncludeDir.GLFW}",
 		"%{IncludeDir.GLAD}",
+		"%{IncludeDir.stb}",
 		"%{IncludeDir.GLM}",
 		"%{IncludeDir.ImGui}"
 	}

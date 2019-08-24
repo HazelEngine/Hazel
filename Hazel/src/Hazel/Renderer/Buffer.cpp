@@ -12,7 +12,7 @@ namespace Hazel {
 		switch (Renderer::GetAPI())
 		{
 			case RendererAPI::API::None:
-				HZ_CORE_ASSERT(false, "RendererAPI::None is currently not supported!");
+				HZ_CORE_ASSERT(false, "RendererAPI::None is currently not supported!")
 				return nullptr;
 
 			case RendererAPI::API::OpenGL:
@@ -20,7 +20,7 @@ namespace Hazel {
 
 			default:
 				HZ_CORE_ASSERT(false, "Unknown RendererAPI!")
-					return nullptr;
+				return nullptr;
 		}
 	}
 
@@ -29,7 +29,7 @@ namespace Hazel {
 		switch (Renderer::GetAPI())
 		{
 			case RendererAPI::API::None:
-				HZ_CORE_ASSERT(false, "RendererAPI::None is currently not supported!");
+				HZ_CORE_ASSERT(false, "RendererAPI::None is currently not supported!")
 				return nullptr;
 
 			case RendererAPI::API::OpenGL:
