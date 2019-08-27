@@ -161,15 +161,15 @@ public:
 			)";
 
 			m_TextureShader.reset(Hazel::Shader::Create(textureShaderVertexSrc, textureShaderFragmentSrc));
+			auto texShader = std::dynamic_pointer_cast<Hazel::OpenGLShader>(m_TextureShader);
+			texShader->Bind();
+			texShader->UploadUniformInt("u_Texture", 0);
 		}
 
 		// Textures
 		{
 			m_Texture = Hazel::Texture2D::Create("assets/Textures/Checkerboard.png");
-			
-			auto glTexShader = std::dynamic_pointer_cast<Hazel::OpenGLShader>(m_TextureShader);
-			glTexShader->Bind();
-			glTexShader->UploadUniformInt("u_Texture", 0);
+			m_PikaTexture = Hazel::Texture2D::Create("assets/Textures/Pika.png");
 		}
 	}
 
@@ -241,6 +241,9 @@ public:
 		m_Texture->Bind(0);
 		Hazel::Renderer::Submit(m_TextureShader, m_SquareVA, scale);
 
+		m_PikaTexture->Bind(0);
+		Hazel::Renderer::Submit(m_TextureShader, m_SquareVA, scale);
+
 		// Triangle
 		//Hazel::Renderer::Submit(m_Shader, m_VertexArray);
 		
@@ -276,7 +279,7 @@ private:
 	Hazel::Ref<Hazel::Shader> m_FlatColorShader, m_TextureShader;
 	Hazel::Ref<Hazel::VertexArray> m_SquareVA;
 
-	Hazel::Ref<Hazel::Texture2D> m_Texture;
+	Hazel::Ref<Hazel::Texture2D> m_Texture, m_PikaTexture;
 };
 
 class Sandbox : public Hazel::Application
