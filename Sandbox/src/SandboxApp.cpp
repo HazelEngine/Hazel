@@ -65,102 +65,10 @@ public:
 
 		// Shaders
 		{
-			std::string vertexSrc = R"(
-				#version 330 core
-			
-				layout (location = 0) in vec3 a_Position;
-				layout (location = 1) in vec4 a_Color;
+			m_Shader.reset(Hazel::Shader::Create("assets/shaders/Shader.glsl"));
+			m_FlatColorShader.reset(Hazel::Shader::Create("assets/shaders/FlatColor.glsl"));
 
-				out vec4 v_Color;
-
-				uniform mat4 u_ViewProjection;
-				uniform mat4 u_Transform;
-
-				void main()
-				{
-					v_Color = a_Color;
-					gl_Position = u_ViewProjection * u_Transform * vec4(a_Position, 1.0f);
-				}
-			)";
-
-			std::string fragmentSrc = R"(
-				#version 330 core
-
-				in vec4 v_Color;
-
-				layout (location = 0) out vec4 FragColor;
-
-				void main()
-				{
-					FragColor = v_Color;
-				}
-			)";
-
-			m_Shader.reset(Hazel::Shader::Create(vertexSrc, fragmentSrc));
-
-			std::string flatColorShaderVertexSrc = R"(
-				#version 330 core
-			
-				layout (location = 0) in vec3 a_Position;
-
-				uniform mat4 u_ViewProjection;
-				uniform mat4 u_Transform;
-
-				void main()
-				{
-					gl_Position = u_ViewProjection * u_Transform * vec4(a_Position, 1.0f);
-				}
-			)";
-
-			std::string flatColorShaderFragmentSrc = R"(
-				#version 330 core
-
-				layout (location = 0) out vec4 FragColor;
-
-				uniform vec3 u_Color;
-
-				void main()
-				{
-					FragColor = vec4(u_Color, 1.0f);
-				}
-			)";
-
-			m_FlatColorShader.reset(Hazel::Shader::Create(flatColorShaderVertexSrc, flatColorShaderFragmentSrc));
-
-			std::string textureShaderVertexSrc = R"(
-				#version 330 core
-			
-				layout (location = 0) in vec3 a_Position;
-				layout (location = 1) in vec2 a_TexCoord;
-
-				out vec2 v_TexCoord;
-
-				uniform mat4 u_ViewProjection;
-				uniform mat4 u_Transform;
-
-				void main()
-				{
-					v_TexCoord = a_TexCoord;
-					gl_Position = u_ViewProjection * u_Transform * vec4(a_Position, 1.0f);
-				}
-			)";
-
-			std::string textureShaderFragmentSrc = R"(
-				#version 330 core
-
-				in vec2 v_TexCoord;
-
-				layout (location = 0) out vec4 FragColor;
-
-				uniform sampler2D u_Texture;
-
-				void main()
-				{
-					FragColor = texture(u_Texture, v_TexCoord);
-				}
-			)";
-
-			m_TextureShader.reset(Hazel::Shader::Create(textureShaderVertexSrc, textureShaderFragmentSrc));
+			m_TextureShader.reset(Hazel::Shader::Create("assets/shaders/Texture.glsl"));
 			auto texShader = std::dynamic_pointer_cast<Hazel::OpenGLShader>(m_TextureShader);
 			texShader->Bind();
 			texShader->UploadUniformInt("u_Texture", 0);
@@ -168,8 +76,8 @@ public:
 
 		// Textures
 		{
-			m_Texture = Hazel::Texture2D::Create("assets/Textures/Checkerboard.png");
-			m_PikaTexture = Hazel::Texture2D::Create("assets/Textures/Pika.png");
+			m_Texture = Hazel::Texture2D::Create("assets/textures/Checkerboard.png");
+			m_PikaTexture = Hazel::Texture2D::Create("assets/textures/Pika.png");
 		}
 	}
 
@@ -221,7 +129,6 @@ public:
 		glm::vec4 blueColor(0.2f, 0.3f, 0.8f, 1.0f);
 
 		auto glFlatColorShader = std::dynamic_pointer_cast<Hazel::OpenGLShader>(m_FlatColorShader);
-		
 		glFlatColorShader->Bind();
 		glFlatColorShader->UploadUniformFloat3("u_Color", m_SquareColor);
 
@@ -238,6 +145,10 @@ public:
 
 		scale = glm::scale(glm::mat4(1.0f), glm::vec3(1.5f));
 		
+		auto glTexShader = std::dynamic_pointer_cast<Hazel::OpenGLShader>(m_TextureShader);
+		glTexShader->Bind();
+		glTexShader->UploadUniformFloat3("u_Color", m_TextureColor);
+
 		m_Texture->Bind(0);
 		Hazel::Renderer::Submit(m_TextureShader, m_SquareVA, scale);
 
@@ -254,6 +165,7 @@ public:
 	{
 		ImGui::Begin("Settings", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
 		ImGui::ColorEdit3("Square Color", glm::value_ptr(m_SquareColor));
+		ImGui::ColorEdit3("Texture Color", glm::value_ptr(m_TextureColor));
 		ImGui::End();
 	}
 
@@ -280,6 +192,7 @@ private:
 	Hazel::Ref<Hazel::VertexArray> m_SquareVA;
 
 	Hazel::Ref<Hazel::Texture2D> m_Texture, m_PikaTexture;
+	glm::vec3 m_TextureColor = { 1.0f, 1.0f, 1.0f };
 };
 
 class Sandbox : public Hazel::Application
