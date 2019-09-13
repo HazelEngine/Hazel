@@ -65,10 +65,21 @@ public:
 
 		// Shaders
 		{
-			m_Shader.reset(Hazel::Shader::Create("assets/shaders/Shader.glsl"));
-			m_FlatColorShader.reset(Hazel::Shader::Create("assets/shaders/FlatColor.glsl"));
+			m_Shader.reset(Hazel::Shader::CreateFromSpirv(
+				"assets/Shaders/Compiled/Shader.vs",
+				"assets/Shaders/Compiled/Shader.fs"
+			));
 
-			m_TextureShader.reset(Hazel::Shader::Create("assets/shaders/Texture.glsl"));
+			m_FlatColorShader.reset(Hazel::Shader::CreateFromSpirv(
+				"assets/Shaders/Compiled/FlatColor.vs",
+				"assets/Shaders/Compiled/FlatColor.fs"
+			));
+
+			m_TextureShader.reset(Hazel::Shader::CreateFromSpirv(
+				"assets/Shaders/Compiled/Texture.vs",
+				"assets/Shaders/Compiled/Texture.fs"
+			));
+
 			auto texShader = std::dynamic_pointer_cast<Hazel::OpenGLShader>(m_TextureShader);
 			texShader->Bind();
 			texShader->UploadUniformInt("u_Texture", 0);
@@ -130,7 +141,7 @@ public:
 
 		auto glFlatColorShader = std::dynamic_pointer_cast<Hazel::OpenGLShader>(m_FlatColorShader);
 		glFlatColorShader->Bind();
-		glFlatColorShader->UploadUniformFloat3("u_Color", m_SquareColor);
+		glFlatColorShader->UploadUniformFloat3("u_RenderData.Color", m_SquareColor);
 
 		for (int y = 0; y < 20; y++)
 		{
@@ -147,7 +158,7 @@ public:
 		
 		auto glTexShader = std::dynamic_pointer_cast<Hazel::OpenGLShader>(m_TextureShader);
 		glTexShader->Bind();
-		glTexShader->UploadUniformFloat3("u_Color", m_TextureColor);
+		glTexShader->UploadUniformFloat3("u_RenderData.Color", m_TextureColor);
 
 		m_Texture->Bind(0);
 		Hazel::Renderer::Submit(m_TextureShader, m_SquareVA, scale);

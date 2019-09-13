@@ -30,8 +30,8 @@ namespace Hazel {
 		auto glShader = std::dynamic_pointer_cast<OpenGLShader>(shader);
 
 		glShader->Bind();
-		glShader->UploadUniformMat4("u_ViewProjection", m_SceneData->ViewProjectionMatrix);
-		glShader->UploadUniformMat4("u_Transform", transform);
+		glShader->UploadUniformMat4("u_SceneData.ViewProjection", m_SceneData->ViewProjectionMatrix);
+		glShader->UploadUniformMat4("u_SceneData.Transform", transform);
 
 		vertexArray->Bind();
 		RenderCommand::DrawIndexed(vertexArray);

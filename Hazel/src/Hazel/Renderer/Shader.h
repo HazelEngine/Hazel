@@ -14,6 +14,7 @@ namespace Hazel {
 
 		static Shader* Create(const std::string& filepath);
 		static Shader* Create(const std::string& vertexSrc, const std::string& fragmentSrc);
+		static Shader* CreateFromSpirv(const std::string& vsPath, const std::string& fsPath);
 	};
 
 }
