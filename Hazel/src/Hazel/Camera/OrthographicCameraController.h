@@ -7,13 +7,13 @@
 
 namespace Hazel {
 
-	class HAZEL_API OrthographicCameraController
+	class OrthographicCameraController
 	{
 	public:
-		OrthographicCameraController(float aspectRatio, bool rotation = false);
+		HAZEL_API OrthographicCameraController(float aspectRatio, bool rotation = false);
 
-		void OnUpdate(Timestep ts);
-		void OnEvent(Event& e);
+		HAZEL_API void OnUpdate(Timestep ts);
+		HAZEL_API void OnEvent(Event& e);
 
 		OrthographicCamera& GetCamera() { return m_Camera; }
 		const OrthographicCamera& GetCamera() const { return m_Camera; }

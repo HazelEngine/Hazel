@@ -62,7 +62,7 @@ namespace Hazel {
 		bool Normalized;
 	};
 
-	class HAZEL_API BufferLayout
+	class BufferLayout
 	{
 	public:
 		BufferLayout() : m_Stride(0) {}

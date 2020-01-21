@@ -4,7 +4,7 @@
 
 namespace Hazel {
 
-	class HAZEL_API OpenGLFramebuffer : public Framebuffer
+	class OpenGLFramebuffer : public Framebuffer
 	{
 	public:
 		OpenGLFramebuffer(FramebufferType type, uint32_t width, uint32_t height);

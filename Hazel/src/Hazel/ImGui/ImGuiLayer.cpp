@@ -1,7 +1,7 @@
 #include "hzpch.h"
 #include "ImGuiLayer.h"
 
-#include "Hazel/Application.h"
+#include "Hazel/Core/Application.h"
 #include "Platform/Windows/WindowsWindow.h"
 
 #include "imgui.h"
@@ -81,7 +81,7 @@ namespace Hazel {
 	{
 		ImGuiIO& io = ImGui::GetIO();
 		Application& app = Application::Get();
-		io.DisplaySize = ImVec2(app.GetWindow().GetWidth(), app.GetWindow().GetHeight());
+		io.DisplaySize = ImVec2((float)app.GetWindow().GetWidth(), (float)app.GetWindow().GetHeight());
 
 		// Rendering
 		ImGui::Render();
