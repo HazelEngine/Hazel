@@ -1,10 +1,13 @@
 #include <Hazel.h>
+#include <Hazel/Core/EntryPoint.h>
 
 #include "Platform/OpenGL/OpenGLShader.h"
 
 #include <imgui.h>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+
+#include "Sandbox2D.h"
 
 class ExampleLayer : public Hazel::Layer
 {
@@ -14,7 +17,7 @@ public:
 	{
 		// Vertex array
 		{
-			m_VertexArray.reset(Hazel::VertexArray::Create());
+			m_VertexArray = Hazel::VertexArray::Create();
 
 			float vertices[3 * 7] =
 			{
@@ -23,7 +26,7 @@ public:
 				 0.0f,  0.5f, 0.0f,    0.8f, 0.8f, 0.2f, 1.0f
 			};
 			Hazel::Ref<Hazel::VertexBuffer> vertexBuffer;
-			vertexBuffer.reset(Hazel::VertexBuffer::Create(vertices, _countof(vertices)));
+			vertexBuffer = Hazel::VertexBuffer::Create(vertices, _countof(vertices));
 			vertexBuffer->SetLayout({
 				{ Hazel::ShaderDataType::Float3, "a_Position" },
 				{ Hazel::ShaderDataType::Float4, "a_Color" }
@@ -32,13 +35,13 @@ public:
 
 			unsigned int indices[3] = { 0, 1, 2 };
 			Hazel::Ref<Hazel::IndexBuffer> indexBuffer;
-			indexBuffer.reset(Hazel::IndexBuffer::Create(indices, _countof(vertices)));
+			indexBuffer = Hazel::IndexBuffer::Create(indices, _countof(vertices));
 			m_VertexArray->SetIndexBuffer(indexBuffer);
 		}
 
 		// Square vertex array
 		{
-			m_SquareVA.reset(Hazel::VertexArray::Create());
+			m_SquareVA = Hazel::VertexArray::Create();
 
 			float squareVertices[4 * 5] =
 			{
@@ -49,7 +52,7 @@ public:
 				-0.5f,  0.5f, 0.0f,		0.0f, 1.0f
 			};
 			Hazel::Ref<Hazel::VertexBuffer> squareVB;
-			squareVB.reset(Hazel::VertexBuffer::Create(squareVertices, _countof(squareVertices)));
+			squareVB = Hazel::VertexBuffer::Create(squareVertices, _countof(squareVertices));
 			squareVB->SetLayout({
 				{ Hazel::ShaderDataType::Float3, "a_Position" },
 				{ Hazel::ShaderDataType::Float2, "a_TexCoord" }
@@ -58,26 +61,29 @@ public:
 
 			uint32_t squareIndices[6] = { 0, 1, 2, 2, 3, 0 };
 			Hazel::Ref<Hazel::IndexBuffer> squareIB;
-			squareIB.reset(Hazel::IndexBuffer::Create(squareIndices, _countof(squareIndices)));
+			squareIB = Hazel::IndexBuffer::Create(squareIndices, _countof(squareIndices));
 			m_SquareVA->SetIndexBuffer(squareIB);
 		}
 
 		// Shaders
 		{
-			m_Shader.reset(Hazel::Shader::CreateFromSpirv(
+			m_Shader = Hazel::Shader::CreateFromSpirv(
+				"Shader",
 				"assets/Shaders/Compiled/Shader.vs",
 				"assets/Shaders/Compiled/Shader.fs"
-			));
+			);
 
-			m_FlatColorShader.reset(Hazel::Shader::CreateFromSpirv(
+			m_FlatColorShader = Hazel::Shader::CreateFromSpirv(
+				"FlatColorShader3D",
 				"assets/Shaders/Compiled/FlatColor.vs",
 				"assets/Shaders/Compiled/FlatColor.fs"
-			));
+			);
 
-			m_TextureShader.reset(Hazel::Shader::CreateFromSpirv(
+			m_TextureShader = Hazel::Shader::CreateFromSpirv(
+				"TextureShader",
 				"assets/Shaders/Compiled/Texture.vs",
 				"assets/Shaders/Compiled/Texture.fs"
-			));
+			);
 
 			auto texShader = std::dynamic_pointer_cast<Hazel::OpenGLShader>(m_TextureShader);
 			texShader->Bind();
@@ -167,7 +173,8 @@ class Sandbox : public Hazel::Application
 public:
 	Sandbox()
 	{
-		PushLayer(new ExampleLayer());
+		//PushLayer(new ExampleLayer());
+		PushLayer(new Sandbox2D());
 	}
 
 	~Sandbox() {}
