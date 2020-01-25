@@ -105,15 +105,11 @@ public:
 		// Render
 		Hazel::Renderer::BeginScene(m_CameraController.GetCamera());
 
-		glm::mat4 scale = glm::scale(glm::mat4(1.0f), glm::vec3(0.1f));
-
-		glm::vec4 redColor(0.8f, 0.2f, 0.3f, 1.0f);
-		glm::vec4 blueColor(0.2f, 0.3f, 0.8f, 1.0f);
-
 		auto glFlatColorShader = std::dynamic_pointer_cast<Hazel::OpenGLShader>(m_FlatColorShader);
 		glFlatColorShader->Bind();
 		glFlatColorShader->UploadUniformFloat3("u_RenderData.Color", m_SquareColor);
 
+		glm::mat4 scale = glm::scale(glm::mat4(1.0f), glm::vec3(0.1f));
 		for (int y = 0; y < 20; y++)
 		{
 			for (int x = 0; x < 20; x++)

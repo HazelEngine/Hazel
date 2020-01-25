@@ -7,7 +7,7 @@
 
 namespace Hazel {
 
-	Hazel::Ref<Hazel::Texture2D> Texture2D::Create(const std::string& path)
+	Ref<Texture2D> Texture2D::Create(const std::string& path)
 	{
 		switch (Renderer::GetAPI())
 		{
@@ -24,7 +24,12 @@ namespace Hazel {
 		}
 	}
 
-	Hazel::Ref<Hazel::Texture2D> Texture2D::Create(
+	Ref<Texture2D> Texture2D::Create(uint32_t width, uint32_t height)
+	{
+		return Create(nullptr, width, height, 4);
+	}
+
+	Ref<Texture2D> Texture2D::Create(
 		const void* data,
 		uint32_t width,
 		uint32_t height,

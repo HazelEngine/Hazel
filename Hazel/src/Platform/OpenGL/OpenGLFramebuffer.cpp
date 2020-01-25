@@ -69,7 +69,7 @@ namespace Hazel {
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
 
-	void OpenGLFramebuffer::BlitTo(const Framebuffer const* framebuffer) const
+	void OpenGLFramebuffer::BlitTo(const Framebuffer* const framebuffer) const
 	{
 		auto glFb = static_cast<const OpenGLFramebuffer*>(framebuffer);
 

@@ -14,7 +14,7 @@ namespace Hazel {
 		virtual void Bind() const = 0;
 		virtual void Unbind() const = 0;
 
-		virtual void BlitTo(const Framebuffer const* framebuffer) const = 0;
+		virtual void BlitTo(const Framebuffer* const framebuffer) const = 0;
 
 		virtual const std::shared_ptr<Texture2D>& GetBuffer(int index) const = 0;
 

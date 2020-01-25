@@ -2,9 +2,11 @@
 
 #include "Hazel/Renderer/Texture.h"
 
+#include <glad/glad.h>
+
 namespace Hazel {
 
-	class HAZEL_API OpenGLTexture2D : public Texture2D
+	class OpenGLTexture2D : public Texture2D
 	{
 	public:
 		OpenGLTexture2D(const std::string& path);
@@ -12,6 +14,8 @@ namespace Hazel {
 		virtual ~OpenGLTexture2D();
 
 		virtual void Bind(uint32_t slot) const override;
+
+		virtual void SetData(void* data, uint32_t size) override;
 
 		virtual uint32_t GetWidth() const override { return m_Width; }
 		virtual uint32_t GetHeight() const override { return m_Height; }
@@ -23,8 +27,9 @@ namespace Hazel {
 
 	private:
 		std::string m_Path;
-		uint32_t m_Width, m_Height;
 		uint32_t m_RendererId;
+		uint32_t m_Width, m_Height;
+		GLenum m_InternalFormat, m_DataFormat;
 	};
 
 }

@@ -13,7 +13,7 @@ namespace Hazel {
 		virtual void Bind() const override;
 		virtual void Unbind() const override;
 
-		virtual void BlitTo(const Framebuffer const* framebuffer) const override;
+		virtual void BlitTo(const Framebuffer* const framebuffer) const override;
 
 		inline virtual const std::shared_ptr<Texture2D>& GetBuffer(int index) const override
 		{
