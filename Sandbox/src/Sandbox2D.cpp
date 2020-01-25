@@ -9,7 +9,11 @@
 Sandbox2D::Sandbox2D()
 	: Layer("Sandbox2D"), m_CameraController(1280.0f / 720.0f) {}
 
-void Sandbox2D::OnAttach() {}
+void Sandbox2D::OnAttach()
+{
+	m_PikaTex = Hazel::Texture2D::Create("assets/Textures/Pika.png");
+	m_CheckerboardTex = Hazel::Texture2D::Create("assets/Textures/Checkerboard.png");
+}
 
 void Sandbox2D::OnDetach() {}
 
@@ -23,7 +27,9 @@ void Sandbox2D::OnUpdate(Hazel::Timestep ts)
 	Hazel::RenderCommand::Clear();
 
 	Hazel::Renderer2D::BeginScene(m_CameraController.GetCamera());
-	Hazel::Renderer2D::DrawQuad({ 0.0f, 0.0f }, { 1.0f, 1.0f }, m_SquareColor);
+	Hazel::Renderer2D::DrawQuad({ 0.7f, 0.0f }, { 1.0f, 1.0f }, m_SquareColor);
+	Hazel::Renderer2D::DrawQuad({ -0.7f, 0.0f }, { 0.6f, 0.6f }, m_PikaTex);
+	Hazel::Renderer2D::DrawQuad({ -0.7f, 0.0f, -0.1f }, { 10.0f, 10.0f }, m_CheckerboardTex);
 	Hazel::Renderer2D::EndScene();
 }
 
