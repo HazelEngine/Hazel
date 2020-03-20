@@ -5,3 +5,9 @@ bin-int/
 
 # Files
 *.user
+
+# Generated profiling files
+HZProfile_*
+
+# Generated log files
+*.log
