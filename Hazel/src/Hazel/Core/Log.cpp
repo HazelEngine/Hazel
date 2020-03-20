@@ -10,13 +10,21 @@ namespace Hazel {
 
 	void Log::Init()
 	{
+		std::vector<spdlog::sink_ptr> sinks;
+		sinks.emplace_back(std::make_shared<spdlog::sinks::wincolor_stdout_sink_mt>());
+		sinks.emplace_back(std::make_shared<spdlog::sinks::simple_file_sink_mt>("Hazel.log", true));
+
 		spdlog::set_pattern("%^[%T] %n: %v%$");
 
-		s_CoreLogger = spdlog::stdout_color_mt("HAZEL");
+		s_CoreLogger = std::make_shared<spdlog::logger>("HAZEL", begin(sinks), end(sinks));
+		spdlog::register_logger(s_CoreLogger);
 		s_CoreLogger->set_level(spdlog::level::trace);
+		s_CoreLogger->flush_on(spdlog::level::trace);
 
-		s_ClientLogger = spdlog::stdout_color_mt("APP");
+		s_ClientLogger = std::make_shared<spdlog::logger>("APP", begin(sinks), end(sinks));
+		spdlog::register_logger(s_ClientLogger);
 		s_ClientLogger->set_level(spdlog::level::trace);
+		s_ClientLogger->flush_on(spdlog::level::trace);
 	}
 
 }
