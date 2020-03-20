@@ -69,7 +69,7 @@ namespace Hazel {
 		glTextureStorage2D(m_RendererId, 1, m_InternalFormat, m_Width, m_Height);
 
 		glTextureParameteri(m_RendererId, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTextureParameteri(m_RendererId, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTextureParameteri(m_RendererId, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 		glTextureParameteri(m_RendererId, GL_TEXTURE_WRAP_S, GL_REPEAT);
 		glTextureParameteri(m_RendererId, GL_TEXTURE_WRAP_T, GL_REPEAT);

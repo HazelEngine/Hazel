@@ -24,5 +24,6 @@ private:
 	Hazel::Ref<Hazel::Texture2D> m_CheckerboardTex;
 	Hazel::Ref<Hazel::Texture2D> m_PikaTex;
 
+	glm::vec4 m_PikaTintColor = glm::vec4(1.0f);
 	glm::vec4 m_SquareColor = { 0.2f, 0.3f, 0.8f, 1.0f };
 };
