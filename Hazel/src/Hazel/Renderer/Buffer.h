@@ -110,9 +110,13 @@ namespace Hazel {
 		virtual const BufferLayout& GetLayout() const = 0;
 		virtual void SetLayout(const BufferLayout& layout) = 0;
 
-		static Ref<VertexBuffer> Create(float* vertices, uint32_t count);
+		virtual void SetData(const void* data, uint32_t size) = 0;
+		
+		static Ref<VertexBuffer> Create(uint32_t size);
+		static Ref<VertexBuffer> Create(float* vertices, uint32_t size);
 	};
 
+	// Currently Hazel only supports 32-bit index buffers
 	class HAZEL_API IndexBuffer
 	{
 	public:
