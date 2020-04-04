@@ -65,14 +65,22 @@ void Sandbox2D::OnUpdate(Hazel::Timestep ts)
 			1.0f,
 			m_PikaTintColor
 		);
+		*/
 		
 		Hazel::Renderer2D::DrawQuad(
-			{ -0.7f, 0.0f, -0.1f },
+			{ 0.0f, -0.7f }, 
+			{ 0.6f, 0.6f },
+			m_PikaTex, 
+			1.0f,
+			m_PikaTintColor
+		);
+		
+		Hazel::Renderer2D::DrawQuad(
+			{ -5.0f, -5.0f, -0.1f },
 			{ 10.0f, 10.0f }, 
 			m_CheckerboardTex, 
-			10.f
+			10.0f
 		);
-		*/
 
 		Hazel::Renderer2D::EndScene();
 	}
