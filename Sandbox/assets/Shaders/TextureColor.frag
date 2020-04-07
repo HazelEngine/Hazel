@@ -11,7 +11,6 @@ layout (binding = 0) uniform sampler2D u_Textures[32];
 
 void main()
 {
-    // TODO: tilingFactor
     int texIndex = int(v_TexIndex);
     FragColor = texture(u_Textures[texIndex], v_TexCoord * v_TilingFactor);
     FragColor *= v_Color;
