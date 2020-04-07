@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Shader.h"
-#include "RenderCommand.h"
+#include "Hazel/Renderer/Shader.h"
+#include "Hazel/Renderer/RenderCommand.h"
 #include "Hazel/Camera/OrthographicCamera.h"
 
 namespace Hazel {
@@ -19,6 +19,8 @@ namespace Hazel {
 			const Ref<VertexArray>& vertexArray,
 			const glm::mat4& transform = glm::mat4(1.0f)
 		);
+
+		static void OnWindowResize(uint32_t width, uint32_t height);
 
 		inline static RendererAPI::API GetAPI() { return RendererAPI::GetAPI(); }
 

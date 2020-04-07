@@ -1,7 +1,7 @@
 #include "hzpch.h"
 #include "ImGuiLayer.h"
 
-#include "Hazel/Application.h"
+#include "Hazel/Core/Application.h"
 #include "Platform/Windows/WindowsWindow.h"
 
 #include "imgui.h"
@@ -10,7 +10,6 @@
 
 // TEMPORARY
 #include "GLFW/glfw3.h"
-#include "glad/glad.h"
 
 namespace Hazel {
 
@@ -28,7 +27,7 @@ namespace Hazel {
 		// Setup Dear ImGui context
 		IMGUI_CHECKVERSION();
 		ImGui::CreateContext();
-		ImGuiIO& io = ImGui::GetIO(); (void)io;
+		ImGuiIO& io = ImGui::GetIO();
 		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;        // Enable Keyboard Controls
 		//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;       // Enable Gamepad Controls
 		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;            // Enable Docking
@@ -54,7 +53,6 @@ namespace Hazel {
 		// Setup Platform/Renderer bindings
 		ImGui_ImplGlfw_InitForOpenGL(window, true);
 		ImGui_ImplOpenGL3_Init("#version 410");
-
 	}
 
 	void ImGuiLayer::OnDetach()
@@ -64,11 +62,7 @@ namespace Hazel {
 		ImGui::DestroyContext();
 	}
 
-	void ImGuiLayer::OnImGuiRender()
-	{
-		static bool show = true;
-		ImGui::ShowDemoWindow(&show);
-	}
+	void ImGuiLayer::OnImGuiRender() {}
 
 	void ImGuiLayer::Begin()
 	{
@@ -81,7 +75,7 @@ namespace Hazel {
 	{
 		ImGuiIO& io = ImGui::GetIO();
 		Application& app = Application::Get();
-		io.DisplaySize = ImVec2(app.GetWindow().GetWidth(), app.GetWindow().GetHeight());
+		io.DisplaySize = ImVec2((float)app.GetWindow().GetWidth(), (float)app.GetWindow().GetHeight());
 
 		// Rendering
 		ImGui::Render();

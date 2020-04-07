@@ -19,11 +19,13 @@ IncludeDir["GLAD"]      = "Hazel/vendor/GLAD/include"
 IncludeDir["stb"]       = "Hazel/vendor/stb"
 IncludeDir["GLM"]       = "Hazel/vendor/GLM"
 IncludeDir["ImGui"]     = "Hazel/vendor/ImGui"
+IncludeDir["SPIRVC"]    = "Hazel/vendor/SPIRV-Cross"
 
 group "ThirdParty"
 	include "Hazel/vendor/GLFW"
 	include "Hazel/vendor/GLAD"
 	include "Hazel/vendor/ImGui"
+	include "Hazel/vendor/SPIRV-Cross"
 group ""
 
 project "Hazel"
@@ -56,7 +58,8 @@ project "Hazel"
 		"%{IncludeDir.GLAD}",
 		"%{IncludeDir.stb}",
 		"%{IncludeDir.GLM}",
-		"%{IncludeDir.ImGui}"
+		"%{IncludeDir.ImGui}",
+		"%{IncludeDir.SPIRVC}"
 	}
 
 	links
@@ -64,6 +67,7 @@ project "Hazel"
 		"GLFW",
 		"GLAD",
 		"ImGui",
+		"SPIRVC",
 		"opengl32.lib"
 	}
 
