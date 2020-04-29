@@ -1,9 +1,18 @@
 #pragma once
 
+#include <Hazel/Renderer/Texture.h>
+
 #include <string>
 #include <glm/glm.hpp>
 
 namespace Hazel {
+
+	struct ShaderCreateInfo
+	{
+		std::string Name;
+		std::vector<uint32_t> VertexShaderSource;
+		std::vector<uint32_t> FragmentShaderSource;
+	};
 
 	class HAZEL_API Shader
 	{
@@ -24,17 +33,16 @@ namespace Hazel {
 		virtual void SetMat3(const std::string& name, const glm::mat3& value) = 0;
 		virtual void SetMat4(const std::string& name, const glm::mat4& value) = 0;
 
+		virtual void SetUniformBuffer(const std::string& name, void* data, uint32_t size) = 0;
+
+		virtual void BindTexture(const std::string& name, const Ref<Texture2D>& texture) = 0;
+		virtual Ref<Texture2D> GetTexture(const std::string& name) const = 0;
+
 		virtual const std::string& GetName() const = 0;
 
-		static Ref<Shader> Create(const std::string& filepath);
+		static Ref<Shader> Create(const ShaderCreateInfo& info);
 
 		static Ref<Shader> Create(
-			const std::string& name,
-			const std::string& vertexSrc,
-			const std::string& fragmentSrc
-		);
-
-		static Ref<Shader> CreateFromSpirv(
 			const std::string& name, 
 			const std::string& vsPath,
 			const std::string& fsPath

@@ -21,6 +21,10 @@
 #include "Hazel/Renderer/Renderer.h"
 #include "Hazel/Renderer/Renderer2D.h"
 #include "Hazel/Renderer/RenderCommand.h"
+#include "Hazel/Renderer/RenderCommandBuffer.h"
+#include "Hazel/Renderer/Pipeline.h"
+#include "Hazel/Renderer/RenderPass.h"
+#include "Hazel/Renderer/Framebuffer.h"
 
 #include "Hazel/Camera/OrthographicCamera.h"
 #include "Hazel/Camera/OrthographicCameraController.h"

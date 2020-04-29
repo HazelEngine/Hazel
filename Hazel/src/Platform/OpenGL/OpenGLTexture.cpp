@@ -2,24 +2,8 @@
 #include "OpenGLTexture.h"
 
 #include <glad/glad.h>
-#include "stb_image.h"
 
 namespace Hazel {
-
-	OpenGLTexture2D::OpenGLTexture2D(const std::string& path)
-		: m_Path(path), m_Width(0), m_Height(0)
-	{
-		HZ_PROFILE_FUNCTION()
-		stbi_set_flip_vertically_on_load(true);
-
-		int width, height, channels;
-		stbi_uc* data = stbi_load(path.c_str(), &width, &height, &channels, 0);
-		HZ_CORE_ASSERT(data, "Failed to load image!")
-
-		Create(data, width, height, channels);
-
-		stbi_image_free(data);
-	}
 
 	OpenGLTexture2D::OpenGLTexture2D(
 		const void* data,

@@ -30,7 +30,7 @@ namespace Hazel {
 		static Ref<Texture2D> Create(uint32_t width, uint32_t height);
 
 		static Ref<Texture2D> Create(
-			const void* data,
+			void* data,
 			uint32_t width,
 			uint32_t height,
 			uint32_t channels = 3

@@ -20,6 +20,7 @@ IncludeDir["stb"]       = "Hazel/vendor/stb"
 IncludeDir["GLM"]       = "Hazel/vendor/GLM"
 IncludeDir["ImGui"]     = "Hazel/vendor/ImGui"
 IncludeDir["SPIRVC"]    = "Hazel/vendor/SPIRV-Cross"
+IncludeDir["Vulkan"]    = os.getenv("VULKAN_SDK")
 
 group "ThirdParty"
 	include "Hazel/vendor/GLFW"
@@ -59,7 +60,8 @@ project "Hazel"
 		"%{IncludeDir.stb}",
 		"%{IncludeDir.GLM}",
 		"%{IncludeDir.ImGui}",
-		"%{IncludeDir.SPIRVC}"
+		"%{IncludeDir.SPIRVC}",
+		"%{IncludeDir.Vulkan}/Include"
 	}
 
 	links
@@ -68,7 +70,8 @@ project "Hazel"
 		"GLAD",
 		"ImGui",
 		"SPIRVC",
-		"opengl32.lib"
+		"opengl32.lib",
+		"%{IncludeDir.Vulkan}/Lib/vulkan-1.lib"
 	}
 
 	filter "system:windows"
@@ -79,7 +82,8 @@ project "Hazel"
 		{
 			"HZ_PLATFORM_WINDOWS",
 			"HZ_BUILD_DLL",
-			"GLFW_INCLUDE_NONE"
+			"GLFW_INCLUDE_NONE",
+			"VK_USE_PLATFORM_WIN32_KHR"
 		}
 
 		postbuildcommands

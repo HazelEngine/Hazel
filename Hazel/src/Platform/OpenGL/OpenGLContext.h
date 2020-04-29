@@ -12,6 +12,8 @@ namespace Hazel {
 		OpenGLContext(GLFWwindow* window);
 
 		virtual void Init() override;
+
+		virtual void Prepare() override {}
 		virtual void SwapBuffers() override;
 
 	private:

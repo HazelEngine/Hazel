@@ -21,11 +21,11 @@ namespace Hazel {
 
 		m_Window = std::unique_ptr<Window>(Window::Create());
 		m_Window->SetEventCallback(HZ_BIND_EVENT_FN(Application::OnEvent));
+		
+		Renderer::Init(m_Window->GetContext());
 
-		Renderer::Init();
-
-		m_ImGuiLayer = new ImGuiLayer();
-		PushOverlay(m_ImGuiLayer);
+		//m_ImGuiLayer = new ImGuiLayer();
+		//PushOverlay(m_ImGuiLayer);
 	}
 
 	Application::~Application()
@@ -45,9 +45,6 @@ namespace Hazel {
 			Timestep timestep = time - m_LastFrameTime;
 			m_LastFrameTime = time;
 
-			RenderCommand::SetClearColor({ 0.1f, 0.1f, 0.1f, 1.0f });
-			RenderCommand::Clear();
-
 			if (!m_Minimized)
 			{
 				{
@@ -57,15 +54,15 @@ namespace Hazel {
 						layer->OnUpdate(timestep);
 				}
 
-				m_ImGuiLayer->Begin();
-				{
-					HZ_PROFILE_SCOPE("LayerStack OnImGuiRender")
-
-					for (Layer* layer : m_LayerStack)
-						layer->OnImGuiRender();
-				}
-
-				m_ImGuiLayer->End();
+				//m_ImGuiLayer->Begin();
+				//{
+				//	HZ_PROFILE_SCOPE("LayerStack OnImGuiRender")
+				//
+				//	for (Layer* layer : m_LayerStack)
+				//		layer->OnImGuiRender();
+				//}
+				//
+				//m_ImGuiLayer->End();
 			}
 
 			m_Window->OnUpdate();

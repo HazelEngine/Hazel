@@ -7,24 +7,13 @@ namespace Hazel {
 	class OpenGLFramebuffer : public Framebuffer
 	{
 	public:
-		OpenGLFramebuffer(FramebufferType type, uint32_t width, uint32_t height);
-		virtual ~OpenGLFramebuffer();
+		OpenGLFramebuffer(const FramebufferSpecification& spec);
+		virtual ~OpenGLFramebuffer() = default;
 
-		virtual void Bind() const override;
-		virtual void Unbind() const override;
-
-		virtual void BlitTo(const Framebuffer* const framebuffer) const override;
-
-		inline virtual const std::shared_ptr<Texture2D>& GetBuffer(int index) const override
-		{
-			return m_Buffers[index];
-		}
+		virtual const FramebufferSpecification& GetSpecification() const { return m_Specification; }
 
 	private:
-		uint32_t m_RendererId;
-		FramebufferType m_Type;
-		uint32_t m_Width, m_Height;
-		std::vector<std::shared_ptr<Texture2D>> m_Buffers;
+		FramebufferSpecification m_Specification;
 	};
 
 }

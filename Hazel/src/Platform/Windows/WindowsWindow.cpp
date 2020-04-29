@@ -5,8 +5,6 @@
 #include "Hazel/Events/MouseEvent.h"
 #include "Hazel/Events/KeyEvent.h"
 
-#include "Platform/OpenGL/OpenGLContext.h"
-
 namespace Hazel {
 
 	static bool s_GLFWInitialized = false;
@@ -51,8 +49,8 @@ namespace Hazel {
 		}
 
 		m_Window = glfwCreateWindow((int)props.Width, (int)props.Height, m_Data.Title.c_str(), nullptr, nullptr);
-		
-		m_Context = new OpenGLContext(m_Window);
+
+		m_Context = GraphicsContext::Create(m_Window);
 		m_Context->Init();
 
 		glfwSetWindowUserPointer(m_Window, &m_Data);
@@ -162,10 +160,10 @@ namespace Hazel {
 
 	void WindowsWindow::SetVSync(bool enabled)
 	{
-		if (enabled)
-			glfwSwapInterval(1);
-		else
-			glfwSwapInterval(0);
+		//if (enabled)
+		//	glfwSwapInterval(1);
+		//else
+		//	glfwSwapInterval(0);
 
 		m_Data.VSync = enabled;
 	}

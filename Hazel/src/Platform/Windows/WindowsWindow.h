@@ -15,6 +15,8 @@ namespace Hazel {
 
 		void OnUpdate() override;
 
+		const Scope<GraphicsContext>& GetContext() const override { return m_Context; }
+
 		inline unsigned int GetWidth() const override { return m_Data.Width; }
 		inline unsigned int GetHeight() const override { return m_Data.Height; }
 
@@ -31,7 +33,7 @@ namespace Hazel {
 
 	private:
 		GLFWwindow* m_Window;
-		GraphicsContext* m_Context;
+		Scope<GraphicsContext> m_Context;
 
 		struct WindowData
 		{

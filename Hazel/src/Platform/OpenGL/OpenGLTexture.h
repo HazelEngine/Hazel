@@ -9,7 +9,6 @@ namespace Hazel {
 	class OpenGLTexture2D : public Texture2D
 	{
 	public:
-		OpenGLTexture2D(const std::string& path);
 		OpenGLTexture2D(const void* data, uint32_t width, uint32_t height, uint32_t channels);
 		virtual ~OpenGLTexture2D();
 
@@ -20,7 +19,10 @@ namespace Hazel {
 		virtual uint32_t GetWidth() const override { return m_Width; }
 		virtual uint32_t GetHeight() const override { return m_Height; }
 		
-		uint32_t GetId() const { return m_RendererId; }
+		uint32_t GetRendererId() const { return m_RendererId; }
+
+		const std::string& GetSamplerName() const { return m_SamplerName; }
+		void SetSamplerName(const std::string& sampler) { m_SamplerName = sampler; }
 
 	public:
 		bool operator==(const Texture& other) const override
@@ -36,6 +38,8 @@ namespace Hazel {
 		uint32_t m_RendererId;
 		uint32_t m_Width, m_Height;
 		GLenum m_InternalFormat, m_DataFormat;
+
+		std::string m_SamplerName;
 	};
 
 }

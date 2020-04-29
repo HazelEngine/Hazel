@@ -1,13 +1,41 @@
 #include "hzpch.h"
 #include "OpenGLShader.h"
 
+#include "OpenGLBuffer.h"
+#include "OpenGLTexture.h"
+
 #include <fstream>
 #include <glad/glad.h>
 #include <glm/gtc/type_ptr.hpp>
+#include <spirv_glsl.hpp>
 
 namespace Hazel {
 
-	static GLenum ShaderTypeFromString(const std::string& type)
+	namespace {
+	
+		std::string ConvertSpirvToGLSL(const std::vector<uint32_t>& spirv)
+		{
+			spirv_cross::CompilerGLSL::Options options;
+			options.version = 330;
+			options.es = false;
+			//options.emit_uniform_buffer_as_plain_uniforms = true;
+
+			spirv_cross::CompilerGLSL compiler(spirv);
+			compiler.set_common_options(options);
+
+			// Map all combinations of images and samplers, as OpenGL has no separate samplers
+			compiler.build_combined_image_samplers();
+
+			// Set the name of the combined sampler to the image name
+			for (auto& remap : compiler.get_combined_image_samplers())
+			{
+				compiler.set_name(remap.combined_id, compiler.get_name(remap.image_id));
+			}
+
+			return compiler.compile();
+		}
+
+		static GLenum ShaderTypeFromString(const std::string& type)
 	{
 		if (type == "vertex")
 			return GL_VERTEX_SHADER;
@@ -18,36 +46,25 @@ namespace Hazel {
 		return 0;
 	}
 
-	OpenGLShader::OpenGLShader(const std::string& filepath)
-	{
-		HZ_PROFILE_FUNCTION()
-		
-		std::string source = ReadFile(filepath);
-		auto shaderSrcs = PreProcess(source);
-		Compile(shaderSrcs);
-
-		// Extract name from filepath
-		auto lastSlash = filepath.find_last_of("/\\");
-		lastSlash = lastSlash == std::string::npos ? 0 : lastSlash + 1;
-		auto lastDot = filepath.rfind('.');
-		auto count = lastDot == std::string::npos ? filepath.size() - lastSlash : lastDot - lastSlash;
-		m_Name = filepath.substr(lastSlash, count);
 	}
 
-	OpenGLShader::OpenGLShader(
-		const std::string& name,
-		const std::string& vertexSrc,
-		const std::string& fragmentSrc
-	) : m_Name(name)
+	OpenGLShader::OpenGLShader(const ShaderCreateInfo& info)
+		: m_Name(info.Name)
 	{
 		HZ_PROFILE_FUNCTION()
 		
 		std::unordered_map<GLenum, std::string> shaderSrcs =
 		{
-			{ GL_VERTEX_SHADER,   vertexSrc   },
-			{ GL_FRAGMENT_SHADER, fragmentSrc }
+			{ GL_VERTEX_SHADER,   ConvertSpirvToGLSL(info.VertexShaderSource)   },
+			{ GL_FRAGMENT_SHADER, ConvertSpirvToGLSL(info.FragmentShaderSource) }
 		};
+
 		Compile(shaderSrcs);
+
+		GetShaderResources(info.VertexShaderSource);
+		GetShaderResources(info.FragmentShaderSource);
+
+		GenerateShaderResources();
 	}
 
 	OpenGLShader::~OpenGLShader()
@@ -114,6 +131,70 @@ namespace Hazel {
 	{
 		HZ_PROFILE_FUNCTION()
 		UploadUniformMat4(name, value);
+	}
+
+	void OpenGLShader::SetUniformBuffer(const std::string& name, void* data, uint32_t size)
+	{
+		if (m_UniformBuffers.find(name) != m_UniformBuffers.end())
+		{
+			void* mapped = m_UniformBuffers[name]->Map();
+			memcpy(mapped, data, size);
+			m_UniformBuffers[name]->Unmap(size);
+			return;
+		}
+
+		HZ_CORE_ERROR("Shader uniform buffer {0} doesn't exists!", name)
+	}
+
+	void OpenGLShader::BindTexture(const std::string& name, const Ref<Texture2D>& texture)
+	{
+		for (ShaderResource resource : m_ShaderResources)
+		{
+			if (resource.Name == name)
+			{
+				// Bind texture
+				m_Textures[name] = texture;
+
+				// Set the Sampler name
+				OpenGLTexture2D* gl_Texture = static_cast<OpenGLTexture2D*>(texture.get());
+				gl_Texture->SetSamplerName(name);
+
+				return;
+			}
+		}
+
+		HZ_CORE_ERROR("Has no {0} texture in the shader {1}", name, m_Name)
+	}
+
+	Ref<Texture2D> OpenGLShader::GetTexture(const std::string& name) const
+	{
+		return m_Textures.at(name);
+	}
+
+	std::vector<Ref<Texture2D>> OpenGLShader::GetTextures() const
+	{
+		std::vector<Ref<Texture2D>> textures(m_Textures.size());
+
+		uint32_t index = 0;
+		for (auto it = m_Textures.begin(); it != m_Textures.end(); it++)
+		{
+			textures[index] = it->second;
+		}
+
+		return textures;
+	}
+
+	std::vector<Ref<UniformBuffer>> OpenGLShader::GetUniformBuffers() const
+	{
+		std::vector<Ref<UniformBuffer>> ubuffers(m_UniformBuffers.size());
+
+		uint32_t index = 0;
+		for (auto it = m_UniformBuffers.begin(); it != m_UniformBuffers.end(); it++)
+		{
+			ubuffers[index] = it->second;
+		}
+
+		return ubuffers;
 	}
 
 	void OpenGLShader::UploadUniformInt(const std::string& name, int value) const
@@ -305,6 +386,86 @@ namespace Hazel {
 		for (auto shaderId : shaderIds)
 		{
 			glDetachShader(m_RendererId, shaderId);
+		}
+	}
+
+	void OpenGLShader::GetShaderResources(const std::vector<uint32_t>& spirv)
+	{
+		spirv_cross::Compiler compiler(spirv);
+		spirv_cross::ShaderResources resources = compiler.get_shader_resources();
+
+		for (const auto& image : resources.sampled_images)
+		{
+			unsigned binding = compiler.get_decoration(image.id, spv::DecorationBinding);
+
+			m_ShaderResources.push_back({
+				binding,
+				image.name,
+				0,
+				false,
+				true
+			});
+		}
+
+		for (const auto& image : resources.separate_images)
+		{
+			unsigned binding = compiler.get_decoration(image.id, spv::DecorationBinding);
+
+			m_ShaderResources.push_back({
+				binding,
+				image.name,
+				0,
+				false,
+				true
+			});
+		}
+
+		for (const auto& ubuffer : resources.uniform_buffers)
+		{
+			unsigned binding = compiler.get_decoration(ubuffer.id, spv::DecorationBinding);
+
+			// Uses the name queried using the id, as it returns the variable name rather than block name
+			auto name = compiler.get_name(ubuffer.id);
+
+			const auto& baseType = compiler.get_type(ubuffer.base_type_id);
+			size_t bytes = compiler.get_declared_struct_size(baseType);
+
+			m_ShaderResources.push_back({
+				binding,
+				name,
+				static_cast<uint32_t>(bytes),
+				true,
+				false
+			});
+		}
+	}
+
+	void OpenGLShader::GenerateShaderResources()
+	{
+		for (ShaderResource resource : m_ShaderResources)
+		{
+			if (resource.IsBuffer)
+			{
+				Ref<UniformBuffer> ubuffer =  UniformBuffer::Create(resource.Size);
+				
+				// Set the binding, needed for OpenGL rendering
+				OpenGLUniformBuffer* gl_UBuffer = static_cast<OpenGLUniformBuffer*>(ubuffer.get());
+				gl_UBuffer->SetBinding(resource.Binding);
+
+				m_UniformBuffers[resource.Name] = ubuffer;
+			}
+			else if (resource.IsImage)
+			{
+				// TODO: Set the default magenta texture
+				uint32_t content = 0xFFFF00FF;
+				Ref<Texture2D> texture = Texture2D::Create(&content, 1, 1, 4);
+				
+				// Set the sampler name, so the sampler int will be set correctly
+				OpenGLTexture2D* gl_Texture = static_cast<OpenGLTexture2D*>(texture.get());
+				gl_Texture->SetSamplerName(resource.Name);
+
+				m_Textures[resource.Name] = texture;
+			}
 		}
 	}
 

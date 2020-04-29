@@ -1,13 +1,11 @@
 #version 440
 
-layout (location = 0) out vec4 FragColor;
+layout (location = 0) in vec2 v_TexCoords;
+layout (location = 1) in vec4 v_Color;
 
-layout (binding = 0) uniform RenderData
-{
-    vec3 Color;
-} u_RenderData;
+layout (location = 0) out vec4 FragColor;
 
 void main()
 {
-    FragColor = vec4(u_RenderData.Color, 1.0f);
+    FragColor = v_Color;
 }

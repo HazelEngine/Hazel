@@ -4,6 +4,7 @@
 
 #include "Hazel/Core/Core.h"
 #include "Hazel/Events/Event.h"
+#include "Hazel/Renderer/GraphicsContext.h"
 
 namespace Hazel {
 
@@ -16,9 +17,7 @@ namespace Hazel {
 		WindowProps(const std::string& title = "Hazel Engine",
 					unsigned int width = 1280,
 					unsigned int height = 720)
-			: Title(title), Width(width), Height(height)
-		{
-		}
+			: Title(title), Width(width), Height(height) {}
 	};
 
 	// Interface representing a desktop system based Window
@@ -30,6 +29,8 @@ namespace Hazel {
 		virtual ~Window() {}
 
 		virtual void OnUpdate() = 0;
+
+		virtual const Scope<GraphicsContext>& GetContext() const = 0;
 
 		virtual unsigned int GetWidth() const = 0;
 		virtual unsigned int GetHeight() const = 0;

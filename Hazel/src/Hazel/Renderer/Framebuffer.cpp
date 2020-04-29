@@ -4,10 +4,11 @@
 #include "Renderer.h"
 
 #include "Platform/OpenGL/OpenGLFramebuffer.h"
+#include "Platform/Vulkan/VulkanFramebuffer.h"
 
 namespace Hazel {
-
-	Hazel::Framebuffer* Framebuffer::Create(FramebufferType type, uint32_t width, uint32_t height)
+	
+	Ref<Framebuffer> Framebuffer::Create(const FramebufferSpecification& spec)
 	{
 		switch (Renderer::GetAPI())
 		{
@@ -16,12 +17,15 @@ namespace Hazel {
 					return nullptr;
 
 			case RendererAPI::API::OpenGL:
-				return new OpenGLFramebuffer(type, width, height);
+				return CreateRef<OpenGLFramebuffer>(spec);
+
+			case RendererAPI::API::Vulkan:
+				return CreateRef<VulkanFramebuffer>(spec);
 
 			default:
 				HZ_CORE_ASSERT(false, "Unknown RendererAPI!")
 					return nullptr;
 		}
 	}
-
+	
 }

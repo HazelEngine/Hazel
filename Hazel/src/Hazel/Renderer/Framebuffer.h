@@ -1,24 +1,24 @@
 #pragma once
 
+#include <Hazel/Core/Core.h>
+
+#include <glm/glm.hpp>
+
 namespace Hazel {
 
-	enum class FramebufferType { Texture2D, Renderbuffer };
-
-	class Texture2D;
+	struct FramebufferSpecification
+	{
+		glm::vec4 ClearColor;
+	};
 
 	class HAZEL_API Framebuffer
 	{
 	public:
-		virtual ~Framebuffer() {}
+		virtual ~Framebuffer() = default;
 
-		virtual void Bind() const = 0;
-		virtual void Unbind() const = 0;
+		virtual const FramebufferSpecification& GetSpecification() const = 0;
 
-		virtual void BlitTo(const Framebuffer* const framebuffer) const = 0;
-
-		virtual const std::shared_ptr<Texture2D>& GetBuffer(int index) const = 0;
-
-		static Framebuffer* Create(FramebufferType type, uint32_t width, uint32_t height);
+		static Ref<Framebuffer> Create(const FramebufferSpecification& spec);
 	};
 
 }

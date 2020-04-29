@@ -3,13 +3,13 @@
 
 #include "Renderer.h"
 #include "Platform/OpenGL/OpenGLShader.h"
-
-// TODO: Remove!
-#include <spirv_glsl.hpp>
+#include "Platform/Vulkan/VulkanShader.h"
 
 namespace Hazel {
 
-	std::vector<uint32_t> LoadSpirvFile(const std::string& path)
+	namespace {
+	
+		std::vector<uint32_t> LoadSpirvFile(const std::string& path)
 	{
 		FILE* file;
 		fopen_s(&file, path.c_str(), "rb");
@@ -31,7 +31,9 @@ namespace Hazel {
 		return spirv;
 	}
 
-	Ref<Shader> Shader::Create(const std::string& filepath)
+	}
+
+	Ref<Shader> Shader::Create(const ShaderCreateInfo& info)
 	{
 		switch (Renderer::GetAPI())
 		{
@@ -40,7 +42,10 @@ namespace Hazel {
 				return nullptr;
 
 			case RendererAPI::API::OpenGL:	
-				return std::make_shared<OpenGLShader>(filepath);
+				return CreateRef<OpenGLShader>(info);
+
+			case RendererAPI::API::Vulkan:	
+				return CreateRef<VulkanShader>(info);
 		}
 
 		HZ_CORE_ASSERT(false, "Unknown RendererAPI!")
@@ -49,48 +54,14 @@ namespace Hazel {
 
 	Ref<Shader> Shader::Create(
 		const std::string& name,
-		const std::string& vertexSrc,
-		const std::string& fragmentSrc
-	) {
-		switch (Renderer::GetAPI())
-		{
-			case RendererAPI::API::None:	
-				HZ_CORE_ASSERT(false, "RendererAPI::None is currently not supported!")
-				return nullptr;
-
-			case RendererAPI::API::OpenGL:	
-				return std::make_shared<OpenGLShader>(name, vertexSrc, fragmentSrc);
-		}
-
-		HZ_CORE_ASSERT(false, "Unknown RendererAPI!")
-		return nullptr;
-	}
-
-	// TODO: Put the implementation inside Platform!
-	Ref<Shader> Shader::CreateFromSpirv(
-		const std::string& name,
 		const std::string& vsPath,
 		const std::string& fsPath
 	) {
-		spirv_cross::CompilerGLSL::Options options;
-		options.version = 330;
-		options.es = false;
-		options.emit_uniform_buffer_as_plain_uniforms = true;
-
-		std::vector<uint32_t> vs = LoadSpirvFile(vsPath);
-		std::vector<uint32_t> fs = LoadSpirvFile(fsPath);
-
-		spirv_cross::CompilerGLSL vsCompiler(std::move(vs));
-		spirv_cross::CompilerGLSL fsCompiler(std::move(fs));
-
-		vsCompiler.set_common_options(options);
-		fsCompiler.set_common_options(options);
-
-		std::string vsSource, fsSource;
-		vsSource = vsCompiler.compile();
-		fsSource = fsCompiler.compile();
-
-		return Create(name, vsSource, fsSource);
+		ShaderCreateInfo info = {};
+		info.Name = name;
+		info.VertexShaderSource = LoadSpirvFile(vsPath);
+		info.FragmentShaderSource = LoadSpirvFile(fsPath);
+		return Create(info);
 	}
 
 }

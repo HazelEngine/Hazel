@@ -8,6 +8,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "Sandbox2D.h"
+#include "RendererTestLayer.h"
 
 class ExampleLayer : public Hazel::Layer
 {
@@ -35,7 +36,7 @@ public:
 
 			unsigned int indices[3] = { 0, 1, 2 };
 			Hazel::Ref<Hazel::IndexBuffer> indexBuffer;
-			indexBuffer = Hazel::IndexBuffer::Create(indices, _countof(vertices));
+			indexBuffer = Hazel::IndexBuffer::Create(indices, _countof(indices));
 			m_VertexArray->SetIndexBuffer(indexBuffer);
 		}
 
@@ -67,19 +68,19 @@ public:
 
 		// Shaders
 		{
-			m_Shader = Hazel::Shader::CreateFromSpirv(
+			m_Shader = Hazel::Shader::Create(
 				"Shader",
 				"assets/Shaders/Compiled/Shader.vs",
 				"assets/Shaders/Compiled/Shader.fs"
 			);
 
-			m_FlatColorShader = Hazel::Shader::CreateFromSpirv(
+			m_FlatColorShader = Hazel::Shader::Create(
 				"FlatColorShader3D",
 				"assets/Shaders/Compiled/FlatColor.vs",
 				"assets/Shaders/Compiled/FlatColor.fs"
 			);
 
-			m_TextureShader = Hazel::Shader::CreateFromSpirv(
+			m_TextureShader = Hazel::Shader::Create(
 				"TextureShader",
 				"assets/Shaders/Compiled/Texture.vs",
 				"assets/Shaders/Compiled/Texture.fs"
@@ -164,13 +165,32 @@ private:
 	glm::vec3 m_SquareColor = { 0.2f, 0.3f, 0.8f };
 };
 
+class EmptyLayer : public Hazel::Layer
+{
+public:
+	EmptyLayer() {}
+
+	virtual ~EmptyLayer() = default;
+
+	void OnAttach() override {}
+
+	void OnDetach() override {}
+
+	void OnUpdate(Hazel::Timestep ts) override {}
+
+	void OnImGuiRender() override {}
+
+	void OnEvent(Hazel::Event& e) override {}
+};
+
 class Sandbox : public Hazel::Application
 {
 public:
 	Sandbox()
 	{
 		//PushLayer(new ExampleLayer());
-		PushLayer(new Sandbox2D());
+		//PushLayer(new Sandbox2D());
+		PushLayer(new RendererTestLayer());
 	}
 
 	~Sandbox() {}
@@ -178,5 +198,6 @@ public:
 
 Hazel::Application* Hazel::CreateApplication()
 {
+	Hazel::RendererAPI::SetAPI(Hazel::RendererAPI::API::Vulkan);
 	return new Sandbox();
 }
