@@ -5,6 +5,7 @@
 
 #include "VulkanContext.h"
 #include "VulkanShader.h"
+#include "VulkanBuffer.h"
 #include "VulkanUtils.h"
 
 namespace Hazel {
@@ -18,49 +19,36 @@ namespace Hazel {
 		auto& vk_Device = vk_Context->GetDevice();
 		VulkanShader* vk_Shader = dynamic_cast<VulkanShader*>(spec.Shader.get());
 
-		//////////////////////////////////////////////////////////////////////////////////
-		// TODO: Get from layout
+		// Setup Vertex Input Bindings
 
 		VkVertexInputBindingDescription vertexInputBindingDesc = {};
 		vertexInputBindingDesc.binding = 0;
 		vertexInputBindingDesc.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-		vertexInputBindingDesc.stride = sizeof(float) * 11;
+		vertexInputBindingDesc.stride = m_Specification.VertexBufferLayout.GetStride();
 
-		VkVertexInputAttributeDescription vertexInputAttrDesc[5] = {};
-		
-		vertexInputAttrDesc[0].binding = vertexInputBindingDesc.binding;
-		vertexInputAttrDesc[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-		vertexInputAttrDesc[0].location = 0;
-		vertexInputAttrDesc[0].offset = 0;
+		size_t elementCount = m_Specification.VertexBufferLayout.GetElements().size();
+		std::vector<VkVertexInputAttributeDescription> vertexInputAttrDescs(elementCount);
 
-		vertexInputAttrDesc[1].binding = vertexInputBindingDesc.binding;
-		vertexInputAttrDesc[1].format = VK_FORMAT_R32G32_SFLOAT;
-		vertexInputAttrDesc[1].location = 1;
-		vertexInputAttrDesc[1].offset = sizeof(float) * 3;
+		uint32_t location = 0;
+		for (const auto& element : m_Specification.VertexBufferLayout)
+		{
+			VkVertexInputAttributeDescription vertexInputAttrDesc = {};
+			vertexInputAttrDesc.binding = vertexInputBindingDesc.binding;
+			vertexInputAttrDesc.format = ShaderDataTypeToVulkanBaseType(element.Type);
+			vertexInputAttrDesc.location = location;
+			vertexInputAttrDesc.offset = element.Offset;
 
-		vertexInputAttrDesc[2].binding = vertexInputBindingDesc.binding;
-		vertexInputAttrDesc[2].format = VK_FORMAT_R32G32B32A32_SFLOAT;
-		vertexInputAttrDesc[2].location = 2;
-		vertexInputAttrDesc[2].offset = sizeof(float) * 5;
+			vertexInputAttrDescs[location] = vertexInputAttrDesc;
 
-		vertexInputAttrDesc[3].binding = vertexInputBindingDesc.binding;
-		vertexInputAttrDesc[3].format = VK_FORMAT_R32_SFLOAT;
-		vertexInputAttrDesc[3].location = 3;
-		vertexInputAttrDesc[3].offset = sizeof(float) * 9;
-
-		vertexInputAttrDesc[4].binding = vertexInputBindingDesc.binding;
-		vertexInputAttrDesc[4].format = VK_FORMAT_R32_SFLOAT;
-		vertexInputAttrDesc[4].location = 4;
-		vertexInputAttrDesc[4].offset = sizeof(float) * 10;
-
-		//////////////////////////////////////////////////////////////////////////////////
+			location++;
+		}
 
 		VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
 		vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 		vertexInputInfo.pVertexBindingDescriptions = &vertexInputBindingDesc;
 		vertexInputInfo.vertexBindingDescriptionCount = 1;
-		vertexInputInfo.pVertexAttributeDescriptions = vertexInputAttrDesc;
-		vertexInputInfo.vertexAttributeDescriptionCount = std::extent<decltype(vertexInputAttrDesc)>::value;
+		vertexInputInfo.pVertexAttributeDescriptions = vertexInputAttrDescs.data();
+		vertexInputInfo.vertexAttributeDescriptionCount = vertexInputAttrDescs.size();
 
 		VkPipelineInputAssemblyStateCreateInfo inputAssemblyInfo = {};
 		inputAssemblyInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;

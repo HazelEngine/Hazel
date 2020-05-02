@@ -90,7 +90,7 @@ void RendererTestLayer::OnUpdate(Timestep ts)
 	glm::mat4 viewProj = m_CameraController.GetCamera().GetViewProjectionMatrix();
 	m_Shader->SetUniformBuffer("u_SceneData", &viewProj, sizeof(glm::mat4));
 	
-	//Renderer::Submit(m_Pipeline, m_VertexBuffer, m_IndexBuffer);
+	Renderer::Submit(m_Pipeline, m_VertexBuffer, m_IndexBuffer);
 	Renderer::EndRenderPass();
 	
 	Renderer::FlushCommandBuffer();

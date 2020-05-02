@@ -198,6 +198,6 @@ public:
 
 Hazel::Application* Hazel::CreateApplication()
 {
-	Hazel::RendererAPI::SetAPI(Hazel::RendererAPI::API::OpenGL);
+	Hazel::RendererAPI::SetAPI(Hazel::RendererAPI::API::Vulkan);
 	return new Sandbox();
 }

@@ -83,4 +83,19 @@ namespace Hazel {
 		VkDescriptorBufferInfo m_DescriptorInfo;
 	};
 	
+	inline VkFormat ShaderDataTypeToVulkanBaseType(ShaderDataType type)
+	{
+		switch (type)
+		{
+		case Hazel::ShaderDataType::Float:		return VK_FORMAT_R32_SFLOAT;
+		case Hazel::ShaderDataType::Float2:		return VK_FORMAT_R32G32_SFLOAT;
+		case Hazel::ShaderDataType::Float3:		return VK_FORMAT_R32G32B32_SFLOAT;
+		case Hazel::ShaderDataType::Float4:		return VK_FORMAT_R32G32B32A32_SFLOAT;
+		case Hazel::ShaderDataType::Int:		return VK_FORMAT_R32_SINT;
+		case Hazel::ShaderDataType::Int2:		return VK_FORMAT_R32G32_SINT;
+		case Hazel::ShaderDataType::Int3:		return VK_FORMAT_R32G32B32_SINT;
+		case Hazel::ShaderDataType::Int4:		return VK_FORMAT_R32G32B32A32_SINT;
+		}
+	}
+
 }
