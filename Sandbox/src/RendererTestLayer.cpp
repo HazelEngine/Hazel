@@ -85,6 +85,11 @@ void RendererTestLayer::OnUpdate(Timestep ts)
 	Renderer2D::DrawQuad({ 1.0f, 0.0f }, { 1.0f, 1.0f }, m_PikachuTex);
 	Renderer2D::DrawQuad({ 1.0f, -2.0f }, { 1.0f, 1.0f }, m_EeveeTex);
 
+	static float rotation = 0.0f;
+	rotation += 0.9f * ts;
+	Renderer2D::DrawRotatedQuad({ 1.0f, 2.0f }, { 1.0f, 1.0f }, rotation, m_EeveeTex);
+	Renderer2D::DrawRotatedQuad({ 2.0f, 0.0f }, { 1.0f, 2.0f }, rotation, { 0.0f, 0.0f, 1.0f, 1.0f });
+
 	Renderer2D::EndScene();
 	
 	glm::mat4 viewProj = m_CameraController.GetCamera().GetViewProjectionMatrix();
