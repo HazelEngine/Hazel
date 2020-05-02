@@ -24,9 +24,9 @@ namespace Hazel {
 		VkVertexInputBindingDescription vertexInputBindingDesc = {};
 		vertexInputBindingDesc.binding = 0;
 		vertexInputBindingDesc.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-		vertexInputBindingDesc.stride = sizeof(float) * 9;
+		vertexInputBindingDesc.stride = sizeof(float) * 11;
 
-		VkVertexInputAttributeDescription vertexInputAttrDesc[3] = {};
+		VkVertexInputAttributeDescription vertexInputAttrDesc[5] = {};
 		
 		vertexInputAttrDesc[0].binding = vertexInputBindingDesc.binding;
 		vertexInputAttrDesc[0].format = VK_FORMAT_R32G32B32_SFLOAT;
@@ -42,6 +42,16 @@ namespace Hazel {
 		vertexInputAttrDesc[2].format = VK_FORMAT_R32G32B32A32_SFLOAT;
 		vertexInputAttrDesc[2].location = 2;
 		vertexInputAttrDesc[2].offset = sizeof(float) * 5;
+
+		vertexInputAttrDesc[3].binding = vertexInputBindingDesc.binding;
+		vertexInputAttrDesc[3].format = VK_FORMAT_R32_SFLOAT;
+		vertexInputAttrDesc[3].location = 3;
+		vertexInputAttrDesc[3].offset = sizeof(float) * 9;
+
+		vertexInputAttrDesc[4].binding = vertexInputBindingDesc.binding;
+		vertexInputAttrDesc[4].format = VK_FORMAT_R32_SFLOAT;
+		vertexInputAttrDesc[4].location = 4;
+		vertexInputAttrDesc[4].offset = sizeof(float) * 10;
 
 		//////////////////////////////////////////////////////////////////////////////////
 
@@ -80,8 +90,15 @@ namespace Hazel {
 		viewportInfo.scissorCount = 1;
 
 		VkPipelineColorBlendAttachmentState colorBlendState = {};
-		colorBlendState.colorWriteMask = 0xF;
-		colorBlendState.blendEnable = VK_FALSE;
+		colorBlendState.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+										 VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+		colorBlendState.blendEnable = VK_TRUE;
+		colorBlendState.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+		colorBlendState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+		colorBlendState.colorBlendOp = VK_BLEND_OP_ADD;
+		colorBlendState.srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+		colorBlendState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+		colorBlendState.alphaBlendOp = VK_BLEND_OP_SUBTRACT;
 
 		VkPipelineColorBlendStateCreateInfo colorBlendInfo = {};
 		colorBlendInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;

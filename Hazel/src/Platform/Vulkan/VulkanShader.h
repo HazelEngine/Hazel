@@ -46,7 +46,10 @@ namespace Hazel {
 		virtual void SetUniformBuffer(const std::string& name, void* data, uint32_t size) override;
 
 		virtual void BindTexture(const std::string& name, const Ref<Texture2D>& texture) override;
+		virtual void BindTexture(const std::string& name, uint32_t index, const Ref<Texture2D>& texture) override;
+		
 		virtual Ref<Texture2D> GetTexture(const std::string& name) const override;
+		virtual Ref<Texture2D> GetTexture(const std::string& name, uint32_t index) const override;
 
 		virtual const std::string& GetName() const override { return m_Name; }
 
@@ -69,7 +72,7 @@ namespace Hazel {
 
 		std::vector<ShaderResource> m_ShaderResources;
 		std::unordered_map<std::string, Ref<UniformBuffer>> m_UniformBuffers;
-		std::unordered_map<std::string, Ref<Texture2D>> m_Textures;
+		std::unordered_map<std::string, std::vector<Ref<Texture2D>>> m_Textures;
 
 		VkShaderModule m_VertexShaderModule = VK_NULL_HANDLE;
 		VkShaderModule m_FragmentShaderModule = VK_NULL_HANDLE;

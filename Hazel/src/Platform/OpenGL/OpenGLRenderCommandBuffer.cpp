@@ -44,6 +44,11 @@ namespace Hazel {
 
 		m_Queue.push_back([=]()
 		{
+			// TODO: Should get pipeline info from Pipeline object
+			// Set pipeline state
+			glEnable(GL_BLEND);
+			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 			glUseProgram(gl_Shader->GetRendererId());
 
 			uint32_t slot = 0;

@@ -148,16 +148,29 @@ namespace Hazel {
 
 	void OpenGLShader::BindTexture(const std::string& name, const Ref<Texture2D>& texture)
 	{
+		BindTexture(name, 0, texture);
+	}
+
+	void OpenGLShader::BindTexture(const std::string& name, uint32_t index, const Ref<Texture2D>& texture)
+	{
 		for (ShaderResource resource : m_ShaderResources)
 		{
 			if (resource.Name == name)
 			{
-				// Bind texture
-				m_Textures[name] = texture;
+				if (index > resource.ArraySize)
+				{
+					HZ_CORE_ERROR("Has no slot {0} in the texture {1}.", index, name)
+					return;
+				}
+
+				// Get the textures, update the texture in the index, and set textures back
+				auto& textures = m_Textures[name];
+				textures[index] = texture;
+				m_Textures[name] = textures;
 
 				// Set the Sampler name
 				OpenGLTexture2D* gl_Texture = static_cast<OpenGLTexture2D*>(texture.get());
-				gl_Texture->SetSamplerName(name);
+				gl_Texture->SetSamplerName(name + "[" + std::to_string(index) + "]");
 
 				return;
 			}
@@ -168,17 +181,29 @@ namespace Hazel {
 
 	Ref<Texture2D> OpenGLShader::GetTexture(const std::string& name) const
 	{
-		return m_Textures.at(name);
+		return GetTexture(name, 0);
+	}
+
+	Ref<Texture2D> OpenGLShader::GetTexture(const std::string& name, uint32_t index) const
+	{
+		auto textures = m_Textures.at(name);
+		HZ_CORE_ASSERT(
+			index < textures.size(),
+			"Has no texture data in the index " + std::to_string(index) + " from the texture " + name
+		)
+		return textures[index];
 	}
 
 	std::vector<Ref<Texture2D>> OpenGLShader::GetTextures() const
 	{
-		std::vector<Ref<Texture2D>> textures(m_Textures.size());
+		std::vector<Ref<Texture2D>> textures;
 
-		uint32_t index = 0;
+		// TODO: Inefficient, should be called just only when textures change
+		// Loop through all the texture arrays and copy the texture refs in the arrays
 		for (auto it = m_Textures.begin(); it != m_Textures.end(); it++)
 		{
-			textures[index] = it->second;
+			auto& textureArray = it->second;
+			textures.insert(textures.end(), textureArray.begin(), textureArray.end());
 		}
 
 		return textures;
@@ -398,10 +423,26 @@ namespace Hazel {
 		{
 			unsigned binding = compiler.get_decoration(image.id, spv::DecorationBinding);
 
+			// Has at least 1 image in the array
+			uint32_t arraySize = 1;
+
+			// Check if is an array and his size
+			const auto& type = compiler.get_type(image.type_id);
+			if (type.array.size() > 0)
+			{
+				arraySize = 0;
+				
+				for (uint32_t i = 0; i < type.array.size(); i++)
+				{
+					arraySize += type.array[i];
+				}
+			}
+
 			m_ShaderResources.push_back({
 				binding,
 				image.name,
 				0,
+				arraySize,
 				false,
 				true
 			});
@@ -411,10 +452,26 @@ namespace Hazel {
 		{
 			unsigned binding = compiler.get_decoration(image.id, spv::DecorationBinding);
 
+			// Has at least 1 image in the array
+			uint32_t arraySize = 1;
+
+			// Check if is an array and his size
+			const auto& type = compiler.get_type(image.type_id);
+			if (type.array.size() > 0)
+			{
+				arraySize = 0;
+				
+				for (uint32_t i = 0; i < type.array.size(); i++)
+				{
+					arraySize += type.array[i];
+				}
+			}
+
 			m_ShaderResources.push_back({
 				binding,
 				image.name,
 				0,
+				arraySize,
 				false,
 				true
 			});
@@ -430,10 +487,26 @@ namespace Hazel {
 			const auto& baseType = compiler.get_type(ubuffer.base_type_id);
 			size_t bytes = compiler.get_declared_struct_size(baseType);
 
+			// Has at least 1 buffer in the array
+			uint32_t arraySize = 1;
+
+			// Check if is an array and his size
+			const auto& type = compiler.get_type(ubuffer.type_id);
+			if (type.array.size() > 0)
+			{
+				arraySize = 0;
+				
+				for (uint32_t i = 0; i < type.array.size(); i++)
+				{
+					arraySize += type.array[i];
+				}
+			}
+
 			m_ShaderResources.push_back({
 				binding,
 				name,
 				static_cast<uint32_t>(bytes),
+				arraySize,
 				true,
 				false
 			});
@@ -458,13 +531,20 @@ namespace Hazel {
 			{
 				// TODO: Set the default magenta texture
 				uint32_t content = 0xFFFF00FF;
-				Ref<Texture2D> texture = Texture2D::Create(&content, 1, 1, 4);
+				Ref<Texture2D> defaultTex = Texture2D::Create(&content, 1, 1, 4);
 				
-				// Set the sampler name, so the sampler int will be set correctly
-				OpenGLTexture2D* gl_Texture = static_cast<OpenGLTexture2D*>(texture.get());
-				gl_Texture->SetSamplerName(resource.Name);
+				std::vector<Ref<Texture2D>> textures(resource.ArraySize);
 
-				m_Textures[resource.Name] = texture;
+				for (uint32_t i = 0; i < resource.ArraySize; i++)
+				{
+					textures[i] = defaultTex;
+
+					// Set the sampler name, so the sampler int will be set correctly
+					OpenGLTexture2D* gl_Texture = static_cast<OpenGLTexture2D*>(textures[i].get());
+					gl_Texture->SetSamplerName(resource.Name + "[" + std::to_string(i) + "]");
+				}
+
+				m_Textures[resource.Name] = textures;
 			}
 		}
 	}

@@ -12,6 +12,7 @@ namespace Hazel {
 
 	Ref<Texture2D> Texture2D::Create(const std::string& path)
 	{
+		// For GL and flipped VK
 		stbi_set_flip_vertically_on_load(true);
 
 		int width, height, channels;

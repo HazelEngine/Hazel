@@ -123,6 +123,11 @@ namespace Hazel {
 
 	void VulkanShader::BindTexture(const std::string& name, const Ref<Texture2D>& texture)
 	{
+		BindTexture(name, 0, texture);
+	}
+
+	void VulkanShader::BindTexture(const std::string& name, uint32_t index, const Ref<Texture2D>& texture)
+	{
 		VulkanContext* vk_Context = dynamic_cast<VulkanContext*>(Renderer::GetContext());
 		auto& vk_Device = vk_Context->GetDevice(); // TODO: Remove
 		VulkanTexture2D* vk_Texture = dynamic_cast<VulkanTexture2D*>(texture.get());
@@ -131,8 +136,16 @@ namespace Hazel {
 		{
 			if (resource.Name == name)
 			{
-				// Bind texture
-				m_Textures[name] = texture;
+				if (index > resource.DescriptorCount)
+				{
+					HZ_CORE_ERROR("Has no slot {0} in the texture {1}.", index, name)
+					return;
+				}
+
+				// Get the textures, update the texture in the index, and set textures back
+				auto& textures = m_Textures[name];
+				textures[index] = texture;
+				m_Textures[name] = textures;
 
 				// Update Descriptor Sets
 
@@ -142,7 +155,18 @@ namespace Hazel {
 				writeDescriptorSets.dstBinding = resource.Binding;
 				writeDescriptorSets.descriptorType = resource.DescriptorType;
 				writeDescriptorSets.descriptorCount = resource.DescriptorCount;
-				writeDescriptorSets.pImageInfo = &vk_Texture->GetDescriptorInfo();
+
+				std::vector<VkDescriptorImageInfo> imageInfos(resource.DescriptorCount);
+
+				// Loop through all textures in the array, to get descriptor infos
+				for (uint32_t i = 0; i < textures.size(); i++)
+				{
+					// Cast to Vulkan Texture, so we can get descriptor info (specific to VK)
+					auto vk_Texture = dynamic_cast<VulkanTexture2D*>(textures[i].get());
+					imageInfos[i] = vk_Texture->GetDescriptorInfo();
+				}
+					
+				writeDescriptorSets.pImageInfo = imageInfos.data();
 
 				vkUpdateDescriptorSets(vk_Device->GetLogicalDevice(), 1, &writeDescriptorSets, 0, nullptr);
 				
@@ -155,7 +179,17 @@ namespace Hazel {
 
 	Ref<Texture2D> VulkanShader::GetTexture(const std::string& name) const
 	{
-		return m_Textures.at(name);
+		return GetTexture(name, 0);
+	}
+
+	Ref<Texture2D> VulkanShader::GetTexture(const std::string& name, uint32_t index) const
+	{
+		auto textures = m_Textures.at(name);
+		HZ_CORE_ASSERT(
+			index < textures.size(),
+			"Has no texture data in the index " + std::to_string(index) + " from the texture " + name
+		)
+		return textures[index];
 	}
 
 	void VulkanShader::CreateSamplers()
@@ -290,6 +324,8 @@ namespace Hazel {
 				writeDescriptorSets.descriptorType = resource.DescriptorType;
 				writeDescriptorSets.descriptorCount = resource.DescriptorCount;
 
+				std::vector<VkDescriptorImageInfo> imageInfos;
+
 				// The buffers will be created on shader creation, so update his descriptors here
 				if (resource.IsBuffer)
 				{
@@ -298,8 +334,22 @@ namespace Hazel {
 				}
 				else if (resource.IsImage)
 				{
-					auto vk_Texture = dynamic_cast<VulkanTexture2D*>(m_Textures[resource.Name].get());
-					writeDescriptorSets.pImageInfo = &vk_Texture->GetDescriptorInfo();
+					// Resize imageInfos vector
+					imageInfos.resize(resource.DescriptorCount);
+
+					// Get all textures in the array
+					auto& textures = m_Textures[resource.Name];
+
+					// Loop through them, to get descriptor infos
+					for (uint32_t i = 0; i < textures.size(); i++)
+					{
+						// Cast to Vulkan Texture, so we can get descriptor info (specific to VK)
+						auto vk_Texture = dynamic_cast<VulkanTexture2D*>(textures[i].get());
+						VkDescriptorImageInfo info = vk_Texture->GetDescriptorInfo();
+						imageInfos[i] = info;
+					}
+					
+					writeDescriptorSets.pImageInfo = imageInfos.data();
 				}
 
 				vkUpdateDescriptorSets(vk_Device->GetLogicalDevice(), 1, &writeDescriptorSets, 0, nullptr);
@@ -476,7 +526,16 @@ namespace Hazel {
 			{
 				// TODO: Set the default magenta texture
 				uint32_t content = 0xFFFF00FF;
-				m_Textures[resource.Name] = Texture2D::Create(&content, 1, 1, 4);
+				Ref<Texture2D> defaultTex = Texture2D::Create(&content, 1, 1, 4);
+
+				std::vector<Ref<Texture2D>> textures(resource.DescriptorCount);
+				
+				for (uint32_t i = 0; i < resource.DescriptorCount; i++)
+				{
+					textures[i] = defaultTex;
+				}
+
+				m_Textures[resource.Name] = textures;
 			}
 		}
 	}

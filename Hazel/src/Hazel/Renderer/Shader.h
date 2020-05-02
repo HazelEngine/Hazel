@@ -36,7 +36,10 @@ namespace Hazel {
 		virtual void SetUniformBuffer(const std::string& name, void* data, uint32_t size) = 0;
 
 		virtual void BindTexture(const std::string& name, const Ref<Texture2D>& texture) = 0;
+		virtual void BindTexture(const std::string& name, uint32_t index, const Ref<Texture2D>& texture) = 0;
+		
 		virtual Ref<Texture2D> GetTexture(const std::string& name) const = 0;
+		virtual Ref<Texture2D> GetTexture(const std::string& name, uint32_t index) const = 0;
 
 		virtual const std::string& GetName() const = 0;
 

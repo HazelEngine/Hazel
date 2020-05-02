@@ -27,8 +27,7 @@ namespace Hazel {
 	public:
 		bool operator==(const Texture& other) const override
 		{
-			// TODO: Verify if are truly equal
-			return true;
+			return m_Image == ((VulkanTexture2D&)other).GetImage();
 		}
 
 	private:

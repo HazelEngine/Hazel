@@ -9,6 +9,8 @@ RendererTestLayer::RendererTestLayer()
 void RendererTestLayer::OnAttach()
 {
 	m_CheckerboardTex = Texture2D::Create("assets/Textures/Checkerboard_SemiTransparent.png");
+	m_PikachuTex = Texture2D::Create("assets/Textures/Pikachu.png");
+	m_EeveeTex = Texture2D::Create("assets/Textures/Eevee.png");
 
 	// 1. Create Render Pipeline
 	// 2. Create Render Command Buffer
@@ -79,12 +81,16 @@ void RendererTestLayer::OnUpdate(Timestep ts)
 	//	}
 	//}
 
+	Renderer2D::DrawQuad({ -1.5f, 0.0f }, { 1.0f, 1.0f }, { 1.0f, 0.0f, 0.0f, 1.0f });
+	Renderer2D::DrawQuad({ 1.0f, 0.0f }, { 1.0f, 1.0f }, m_PikachuTex);
+	Renderer2D::DrawQuad({ 1.0f, -2.0f }, { 1.0f, 1.0f }, m_EeveeTex);
+
 	Renderer2D::EndScene();
 	
 	glm::mat4 viewProj = m_CameraController.GetCamera().GetViewProjectionMatrix();
 	m_Shader->SetUniformBuffer("u_SceneData", &viewProj, sizeof(glm::mat4));
 	
-	Renderer::Submit(m_Pipeline, m_VertexBuffer, m_IndexBuffer);
+	//Renderer::Submit(m_Pipeline, m_VertexBuffer, m_IndexBuffer);
 	Renderer::EndRenderPass();
 	
 	Renderer::FlushCommandBuffer();
