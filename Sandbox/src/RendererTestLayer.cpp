@@ -69,6 +69,9 @@ void RendererTestLayer::OnUpdate(Timestep ts)
 	// Update
 	m_CameraController.OnUpdate(ts);
 
+	// Reset statistics
+	Renderer2D::ResetStatistics();
+
 	Renderer::BeginRenderPass(m_RenderPass);
 	Renderer2D::BeginScene(m_CameraController.GetCamera());
 
@@ -76,7 +79,7 @@ void RendererTestLayer::OnUpdate(Timestep ts)
 	//{
 	//	for (float x = -1.0f; x < 1.0f; x += 0.1f)
 	//	{
-	//		glm::vec4 color = { (x + 10.0f) / 20.0f, (y + 10.0f) / 20.0f, 0.5f, 1.0f };
+	//		glm::vec4 color = { (x + 10.0f) / 20.0f, 0.3f, (y + 10.0f) / 20.0f, 1.0f };
 	//		Renderer2D::DrawQuad({ x, y }, { 0.09f, 0.09f }, color);
 	//	}
 	//}

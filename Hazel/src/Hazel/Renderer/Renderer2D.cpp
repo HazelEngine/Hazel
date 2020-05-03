@@ -21,14 +21,16 @@ namespace Hazel {
 	
 	struct Renderer2DData
 	{
-		static const uint32_t MaxQuads = 40000;
+		static const uint32_t MaxQuads = 20000;
 		static const uint32_t MaxVertices = MaxQuads * 4;
 		static const uint32_t MaxIndices = MaxQuads * 6;
 		static const uint32_t MaxTextureSlots = 32; // TODO: RenderCapabilities
 		
 		Ref<Pipeline> QuadPipeline;
-		Ref<VertexBuffer> QuadVertexBuffer;
 		Ref<IndexBuffer> QuadIndexBuffer;
+
+		std::vector<Ref<VertexBuffer>> QuadVertexBuffers;
+		uint32_t VertexBufferIndex = 0;
 
 		uint32_t IndexCount = 0;
 		QuadVertex* QuadVertexBufferData = nullptr;
@@ -40,6 +42,8 @@ namespace Hazel {
 
 		std::array<Ref<Texture2D>, MaxTextureSlots> TextureSlots;
 		uint32_t TextureSlotIndex = 1; // 0  = white texture
+
+		Renderer2D::Statistics Stats;
 	};
 
 	static Renderer2DData* s_Data = new Renderer2DData();
@@ -48,15 +52,16 @@ namespace Hazel {
 	{
 		HZ_PROFILE_FUNCTION()
 		
-		s_Data->QuadVertexBuffer = VertexBuffer::Create(s_Data->MaxVertices * sizeof(QuadVertex));
-		s_Data->QuadVertexBuffer->SetLayout({
+		Ref<VertexBuffer> vBuffer = VertexBuffer::Create(s_Data->MaxVertices * sizeof(QuadVertex));
+		vBuffer->SetLayout({
 			{ ShaderDataType::Float3, "a_Position"     },
 			{ ShaderDataType::Float2, "a_TexCoords"    },
 			{ ShaderDataType::Float4, "a_Color"        },
 			{ ShaderDataType::Float,  "a_TexIndex"     },
 			{ ShaderDataType::Float,  "a_TilingFactor" }
 		});
-		
+		s_Data->QuadVertexBuffers.push_back(vBuffer);
+
 		uint32_t* indices = new uint32_t[s_Data->MaxIndices];
 
 		uint32_t offset = 0;
@@ -116,9 +121,11 @@ namespace Hazel {
 	void Renderer2D::BeginScene(const OrthographicCamera& camera)
 	{
 		HZ_PROFILE_FUNCTION()
+
+		uint32_t vbIndex = s_Data->VertexBufferIndex = 0;
 		
 		s_Data->IndexCount = 0;
-		s_Data->QuadVertexBufferData = (QuadVertex*)s_Data->QuadVertexBuffer->Map();
+		s_Data->QuadVertexBufferData = (QuadVertex*)s_Data->QuadVertexBuffers[vbIndex]->Map();
 		s_Data->QuadVertexBufferDataPtr = s_Data->QuadVertexBufferData;
 
 		struct
@@ -138,27 +145,35 @@ namespace Hazel {
 	{
 		HZ_PROFILE_FUNCTION()
 
+		uint32_t vbIndex = s_Data->VertexBufferIndex;
+
 		std::ptrdiff_t size = (char*)s_Data->QuadVertexBufferDataPtr - (char*)s_Data->QuadVertexBufferData;
-		s_Data->QuadVertexBuffer->Unmap(size);
+		s_Data->QuadVertexBuffers[vbIndex]->Unmap(size);
 
 		Renderer::Submit(
 			s_Data->QuadPipeline,
-			s_Data->QuadVertexBuffer,
+			s_Data->QuadVertexBuffers[vbIndex],
 			s_Data->QuadIndexBuffer,
 			s_Data->IndexCount
 		);
+
+		s_Data->Stats.DrawCalls++;
 	}
 
 	void Renderer2D::OnResize()
 	{
-		// Framebuffer size has changed, need to re-build command buffer
-		// (Note: This is MANDATORY on Vulkan and D3D12)
-		Renderer::Submit(
-			s_Data->QuadPipeline,
-			s_Data->QuadVertexBuffer,
-			s_Data->QuadIndexBuffer,
-			s_Data->IndexCount
-		);
+		for (auto& vBuffer : s_Data->QuadVertexBuffers)
+		{
+			// Framebuffer size has changed, need to re-build command buffer
+			// (Note: This is MANDATORY on Vulkan and D3D12)
+			Renderer::Submit(
+				s_Data->QuadPipeline,
+				vBuffer,
+				s_Data->QuadIndexBuffer,
+				s_Data->IndexCount
+			);
+		}
+		
 		Renderer::FlushCommandBuffer();
 	}
 
@@ -170,9 +185,12 @@ namespace Hazel {
 	void Renderer2D::DrawQuad(const glm::vec3& position, const glm::vec2& size, const glm::vec4& color)
 	{
 		HZ_PROFILE_FUNCTION()
-		
+
 		float textureIndex = 0.0f;
 		float tilingFactor = 1.0f;
+
+		if (s_Data->IndexCount >= Renderer2DData::MaxIndices)
+			StartNewBatch();
 
 		glm::mat4 transform = glm::mat4(1.0f);
 		transform = glm::translate(transform, position);
@@ -207,6 +225,8 @@ namespace Hazel {
 		s_Data->QuadVertexBufferDataPtr++;
 
 		s_Data->IndexCount += 6;
+
+		s_Data->Stats.QuadCount++;
 	}
 
 	void Renderer2D::DrawQuad(
@@ -231,6 +251,9 @@ namespace Hazel {
 		HZ_PROFILE_FUNCTION()
 		
 		float textureIndex = 0.0f;
+
+		if (s_Data->IndexCount >= Renderer2DData::MaxIndices)
+			StartNewBatch();
 
 		for (uint32_t i = 1; i < s_Data->TextureSlotIndex; i++)
 		{
@@ -291,6 +314,8 @@ namespace Hazel {
 		s_Data->QuadVertexBufferDataPtr++;
 
 		s_Data->IndexCount += 6;
+
+		s_Data->Stats.QuadCount++;
 	}
 
 	void Renderer2D::DrawRotatedQuad(
@@ -314,6 +339,9 @@ namespace Hazel {
 		
 		float textureIndex = 0.0f;
 		float tilingFactor = 1.0f;
+
+		if (s_Data->IndexCount >= Renderer2DData::MaxIndices)
+			StartNewBatch();
 
 		glm::mat4 transform = glm::mat4(1.0f);
 		transform = glm::translate(transform, position);
@@ -349,6 +377,8 @@ namespace Hazel {
 		s_Data->QuadVertexBufferDataPtr++;
 
 		s_Data->IndexCount += 6;
+
+		s_Data->Stats.QuadCount++;
 	}
 
 	void Renderer2D::DrawRotatedQuad(
@@ -380,8 +410,11 @@ namespace Hazel {
 	)
 	{
 		HZ_PROFILE_FUNCTION()
-		
+
 		float textureIndex = 0.0f;
+
+		if (s_Data->IndexCount >= Renderer2DData::MaxIndices)
+			StartNewBatch();
 
 		for (uint32_t i = 1; i < s_Data->TextureSlotIndex; i++)
 		{
@@ -443,5 +476,39 @@ namespace Hazel {
 		s_Data->QuadVertexBufferDataPtr++;
 
 		s_Data->IndexCount += 6;
+
+		s_Data->Stats.QuadCount++;
 	}
+	
+	void Renderer2D::ResetStatistics()
+	{
+		memset(&s_Data->Stats, 0, sizeof(Renderer2D::Statistics));
+	}
+
+	Renderer2D::Statistics Renderer2D::GetStatistics()
+	{
+		return s_Data->Stats;
+	}
+
+	void Renderer2D::StartNewBatch()
+	{
+		EndScene();
+
+		// Increment the vertex buffer index
+		uint32_t vbIndex = ++s_Data->VertexBufferIndex;
+
+		// If the vertex buffer in the index has not been created yet
+		if (s_Data->QuadVertexBuffers.size() <= s_Data->VertexBufferIndex)
+		{
+			// Create a new vertex buffer
+			Ref<VertexBuffer> vBuffer = VertexBuffer::Create(s_Data->MaxVertices * sizeof(QuadVertex));
+			vBuffer->SetLayout(s_Data->QuadVertexBuffers[0]->GetLayout());
+			s_Data->QuadVertexBuffers.push_back(vBuffer);
+		}
+		
+		s_Data->IndexCount = 0;
+		s_Data->QuadVertexBufferData = (QuadVertex*)s_Data->QuadVertexBuffers[vbIndex]->Map();
+		s_Data->QuadVertexBufferDataPtr = s_Data->QuadVertexBufferData;
+	}
+
 }
