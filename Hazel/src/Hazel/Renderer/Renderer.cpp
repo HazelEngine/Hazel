@@ -26,6 +26,11 @@ namespace Hazel {
 		Renderer2D::Init();
 	}
 
+	void Renderer::Prepare()
+	{
+		s_Context->Prepare();
+	}
+
 	void Renderer::BeginScene(OrthographicCamera& camera)
 	{
 		s_SceneData->ViewProjectionMatrix = camera.GetViewProjectionMatrix();
@@ -35,7 +40,6 @@ namespace Hazel {
 
 	void Renderer::BeginRenderPass(const Ref<RenderPass>& renderPass)
 	{
-		s_Context->Prepare();
 		s_RenderCommandBuffer->BeginRenderPass(renderPass);
 	}
 
@@ -52,6 +56,28 @@ namespace Hazel {
 	)
 	{
 		s_RenderCommandBuffer->Submit(pipeline, vertexBuffer, indexBuffer, indexCount);
+	}
+
+	void Renderer::Submit(
+		const Ref<Pipeline>& pipeline,
+		const Ref<VertexBuffer>& vertexBuffer,
+		const Ref<IndexBuffer>& indexBuffer,
+		const Ref<Material>& material,
+		uint32_t indexCount
+	)
+	{
+		s_RenderCommandBuffer->Submit(pipeline, vertexBuffer, indexBuffer, material, indexCount);
+	}
+
+	void Renderer::Submit(
+		const Ref<Pipeline>& pipeline,
+		const Ref<VertexBuffer>& vertexBuffer,
+		const Ref<IndexBuffer>& indexBuffer,
+		const Ref<MaterialInstance>& materialInstance,
+		uint32_t indexCount
+	)
+	{
+		s_RenderCommandBuffer->Submit(pipeline, vertexBuffer, indexBuffer, materialInstance, indexCount);
 	}
 
 	void Renderer::Submit(

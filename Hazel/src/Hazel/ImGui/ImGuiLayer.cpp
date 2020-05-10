@@ -2,11 +2,14 @@
 #include "ImGuiLayer.h"
 
 #include "Hazel/Core/Application.h"
+#include "Hazel/Renderer/Renderer.h"
+
 #include "Platform/Windows/WindowsWindow.h"
 
 #include "imgui.h"
 #include "examples/imgui_impl_glfw.h"
 #include "examples/imgui_impl_opengl3.h"
+#include "examples/imgui_impl_vulkan.h"
 
 // TEMPORARY
 #include "GLFW/glfw3.h"
@@ -57,6 +60,7 @@ namespace Hazel {
 
 	void ImGuiLayer::OnDetach()
 	{
+		
 		ImGui_ImplOpenGL3_Shutdown();
 		ImGui_ImplGlfw_Shutdown();
 		ImGui::DestroyContext();

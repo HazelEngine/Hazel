@@ -1,6 +1,8 @@
 #pragma once
 
+#include <Hazel/Core/Buffer.h>
 #include <Hazel/Renderer/Texture.h>
+#include <Hazel/Renderer/ShaderUniform.h>
 
 #include <string>
 #include <glm/glm.hpp>
@@ -33,13 +35,29 @@ namespace Hazel {
 		virtual void SetMat3(const std::string& name, const glm::mat3& value) = 0;
 		virtual void SetMat4(const std::string& name, const glm::mat4& value) = 0;
 
+		virtual const ShaderUniformBufferList GetVSUniformBuffers() const = 0;
+		virtual const ShaderUniformBufferList GetPSUniformBuffers() const = 0;
+		virtual const ShaderResourceList GetResources() const = 0;
+		
 		virtual void SetUniformBuffer(const std::string& name, void* data, uint32_t size) = 0;
 
-		virtual void BindTexture(const std::string& name, const Ref<Texture2D>& texture) = 0;
-		virtual void BindTexture(const std::string& name, uint32_t index, const Ref<Texture2D>& texture) = 0;
+		virtual void BindTexture(const std::string& name, const Ref<Texture>& texture) = 0;
+		virtual void BindTexture(const std::string& name, uint32_t index, const Ref<Texture>& texture) = 0;
 		
-		virtual Ref<Texture2D> GetTexture(const std::string& name) const = 0;
-		virtual Ref<Texture2D> GetTexture(const std::string& name, uint32_t index) const = 0;
+		virtual void BindTextureToPool(const std::string& name, const Ref<Texture>& texture) = 0;
+		
+		virtual Ref<Texture> GetTexture(const std::string& name) const = 0;
+		virtual Ref<Texture> GetTexture(const std::string& name, uint32_t index) const = 0;
+
+		// Specific to Material uniforms
+		virtual bool HasVSMaterialUniformBuffer() const = 0;
+		virtual bool HasPSMaterialUniformBuffer() const = 0;
+		virtual const ShaderUniformBufferDeclaration& GetVSMaterialUniformBuffer() const = 0;
+		virtual const ShaderUniformBufferDeclaration& GetPSMaterialUniformBuffer() const = 0;
+		virtual void SetMaterialUniformBuffer(Buffer buffer, uint32_t materialIndex) = 0;
+		
+		virtual uint32_t GetMaterialCount() const = 0;
+		virtual void SetMaterialCount(uint32_t count) = 0;
 
 		virtual const std::string& GetName() const = 0;
 

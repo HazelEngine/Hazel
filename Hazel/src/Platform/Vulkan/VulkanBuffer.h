@@ -71,6 +71,8 @@ namespace Hazel {
 		virtual void* Map() override;
 		virtual void Unmap(uint32_t size) override;
 
+		uint32_t GetSize() const { return m_Size; }
+
 		const VkBuffer& GetDeviceBuffer() const { return m_DeviceBuffer; }
 		VkDescriptorBufferInfo GetDescriptorInfo() const { return m_DescriptorInfo; }
 

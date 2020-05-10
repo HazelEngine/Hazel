@@ -3,6 +3,8 @@
 #include <Hazel/Renderer/Shader.h>
 #include <Hazel/Renderer/Buffer.h>
 
+#include <Platform/OpenGL/OpenGLShaderUniform.h>
+
 typedef unsigned int GLenum;
 
 namespace Hazel {
@@ -39,19 +41,35 @@ namespace Hazel {
 		virtual void SetMat3(const std::string& name, const glm::mat3& value) override;
 		virtual void SetMat4(const std::string& name, const glm::mat4& value) override;
 
+		virtual const ShaderUniformBufferList GetVSUniformBuffers() const override { return m_VSUniformBuffers; }
+		virtual const ShaderUniformBufferList GetPSUniformBuffers() const override { return m_PSUniformBuffers; }
+		virtual const ShaderResourceList GetResources() const override { return m_Resources; }
+
 		virtual void SetUniformBuffer(const std::string& name, void* data, uint32_t size) override;
 
-		virtual void BindTexture(const std::string& name, const Ref<Texture2D>& texture) override;
-		virtual void BindTexture(const std::string& name, uint32_t index, const Ref<Texture2D>& texture) override;
+		virtual void BindTexture(const std::string& name, const Ref<Texture>& texture) override;
+		virtual void BindTexture(const std::string& name, uint32_t index, const Ref<Texture>& texture) override;
 		
-		virtual Ref<Texture2D> GetTexture(const std::string& name) const override;
-		virtual Ref<Texture2D> GetTexture(const std::string& name, uint32_t index) const override;
+		virtual void BindTextureToPool(const std::string& name, const Ref<Texture>& texture) override;
+		
+		virtual Ref<Texture> GetTexture(const std::string& name) const override;
+		virtual Ref<Texture> GetTexture(const std::string& name, uint32_t index) const override;
+
+		// Specific to Material uniforms
+		virtual bool HasVSMaterialUniformBuffer() const override { return (bool)m_VSMaterialUniformBuffer; }
+		virtual bool HasPSMaterialUniformBuffer() const override { return (bool)m_PSMaterialUniformBuffer; }
+		virtual const ShaderUniformBufferDeclaration& GetVSMaterialUniformBuffer() const override { return *m_VSMaterialUniformBuffer; }
+		virtual const ShaderUniformBufferDeclaration& GetPSMaterialUniformBuffer() const override { return *m_PSMaterialUniformBuffer; }
+		virtual void SetMaterialUniformBuffer(Buffer buffer, uint32_t materialIndex) override;
+		
+		virtual uint32_t GetMaterialCount() const override { return m_MaterialCount; }
+		virtual void SetMaterialCount(uint32_t count) override { m_MaterialCount = count; }
 
 		const std::string& GetName() const override { return m_Name; };
 
 		uint32_t GetRendererId() const { return m_RendererId; }
 
-		std::vector<Ref<Texture2D>> GetTextures() const;
+		std::vector<Ref<Texture>> GetTextures() const;
 		std::vector<Ref<UniformBuffer>> GetUniformBuffers() const;
 
 		void UploadUniformInt(const std::string& name, int value) const;
@@ -77,9 +95,19 @@ namespace Hazel {
 		uint32_t m_RendererId;
 		std::string m_Name;
 
+		// Shader resource declarations
+		ShaderUniformBufferList m_VSUniformBuffers;
+		ShaderUniformBufferList m_PSUniformBuffers;
+		ShaderResourceList m_Resources;
+
+		// Specific material resource declarations
+		Scope<OpenGLShaderUniformBufferDeclaration> m_VSMaterialUniformBuffer;
+		Scope<OpenGLShaderUniformBufferDeclaration> m_PSMaterialUniformBuffer;
+		uint32_t m_MaterialCount;
+
 		std::vector<ShaderResource> m_ShaderResources;
 		std::unordered_map<std::string, Ref<UniformBuffer>> m_UniformBuffers;
-		std::unordered_map<std::string, std::vector<Ref<Texture2D>>> m_Textures;
+		std::unordered_map<std::string, std::vector<Ref<Texture>>> m_Textures;
 	};
 
 }

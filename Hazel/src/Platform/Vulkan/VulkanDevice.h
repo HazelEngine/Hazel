@@ -21,6 +21,8 @@ namespace Hazel {
 		const VkDevice& GetLogicalDevice() const { return m_Device; }
 		const VkQueue& GetGraphicsQueue() const { return m_GraphicsQueue; }
 
+		const VkPhysicalDeviceProperties& GetProperties() const { return m_Properties; }
+
 		QueueFamilyIndices GetQueueFamilyIndices() const { return m_QueueFamilyIndices; }
 
 	private:
@@ -36,6 +38,8 @@ namespace Hazel {
 		VkPhysicalDevice m_PhysicalDevice = VK_NULL_HANDLE;
 		VkDevice m_Device = VK_NULL_HANDLE;
 		VkQueue m_GraphicsQueue = VK_NULL_HANDLE;
+
+		VkPhysicalDeviceProperties m_Properties;
 
 		QueueFamilyIndices m_QueueFamilyIndices;
 	};

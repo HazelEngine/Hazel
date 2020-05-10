@@ -85,6 +85,7 @@ namespace Hazel {
 		if (indices.IsComplete())
 		{
 			m_QueueFamilyIndices = indices;
+			m_Properties = deviceProperties;
 		}
 
 		return deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU

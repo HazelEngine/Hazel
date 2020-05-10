@@ -9,6 +9,13 @@
 
 #include <vulkan/vulkan.hpp>
 
+#define MAX_DESCRIPTOR_SETS						500
+#define MAX_DESCRIPTOR_UBUFFER					100
+#define MAX_DESCRIPTOR_UBUFFER_DYNAMIC			100
+#define MAX_DESCRIPTOR_SAMPLED_IMAGE			100
+#define MAX_DESCRIPTOR_COMBINED_IMAGE_SAMPLER	100
+#define MAX_DESCRIPTOR_SAMPLER					100
+
 struct GLFWwindow;
 
 namespace Hazel {
@@ -34,6 +41,8 @@ namespace Hazel {
 		std::vector<VkCommandBuffer> GetDrawCommandBuffers() const { return m_DrawCmdBuffers; }
 		std::vector<VkFramebuffer> GetFramebuffers() const { return m_Framebuffers; }
 
+		VkDescriptorPool GetDescriptorPool() const { return m_DescriptorPool; }
+
 		VkCommandBuffer GetCurrentDrawCmdBuffer() const { return m_DrawCmdBuffers[m_CurrentBackbuffer]; }
 		VkFramebuffer GetCurrentFramebuffer() const { return m_Framebuffers[m_CurrentBackbuffer]; }
 
@@ -46,6 +55,7 @@ namespace Hazel {
 		void CreateFramebuffers();
 		void CreateCommandPool();
 		void CreateCommandBuffers();
+		void CreateDescriptorPool();
 
 		bool CheckValidationLayerIsPresent();
 
@@ -72,6 +82,8 @@ namespace Hazel {
 		VkSemaphore m_RenderingCompleteSemaphore;
 
 		std::vector<VkFence> m_FrameFences;
+
+		VkDescriptorPool m_DescriptorPool;
 	};
 
 }

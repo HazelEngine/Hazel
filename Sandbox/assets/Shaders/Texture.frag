@@ -5,8 +5,13 @@ layout (location = 1) in vec4 v_Color;
 
 layout (location = 0) out vec4 FragColor;
 
-layout (binding = 1) uniform texture2D u_Texture;
+layout (set = 1, binding = 0) uniform texture2D u_Texture;
 layout (binding = 2) uniform sampler u_Sampler;
+
+layout (binding = 3) uniform MaterialData
+{
+    vec4 Albedo;
+} u_MaterialData;
 
 void main()
 {

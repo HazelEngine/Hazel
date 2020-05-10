@@ -96,6 +96,26 @@ namespace Hazel {
 		});
 	}
 
+	void OpenGLRenderCommandBuffer::Submit(
+		const Ref<Pipeline>& pipeline, 
+		const Ref<VertexBuffer>& vertexBuffer,
+		const Ref<IndexBuffer>& indexBuffer,
+		const Ref<Material>& material, 
+		uint32_t indexCount
+	)
+	{
+	}
+
+	void OpenGLRenderCommandBuffer::Submit(
+		const Ref<Pipeline>& pipeline,
+		const Ref<VertexBuffer>& vertexBuffer,
+		const Ref<IndexBuffer>& indexBuffer,
+		const Ref<MaterialInstance>& materialInstance,
+		uint32_t indexCount
+	)
+	{
+	}
+
 	void OpenGLRenderCommandBuffer::Flush()
 	{
 		for (auto& func : m_Queue)

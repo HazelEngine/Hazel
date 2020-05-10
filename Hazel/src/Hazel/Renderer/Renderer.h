@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Hazel/Renderer/Shader.h>
+#include <Hazel/Renderer/Material.h>
 #include <Hazel/Renderer/Pipeline.h>
 #include <Hazel/Renderer/RenderPass.h>
 #include <Hazel/Renderer/RenderCommand.h>
@@ -14,6 +15,8 @@ namespace Hazel {
 	public:
 		static void Init(const Scope<GraphicsContext>& context);
 
+		static void Prepare();
+
 		static void BeginScene(OrthographicCamera& camera);
 		static void EndScene();
 
@@ -24,6 +27,22 @@ namespace Hazel {
 			const Ref<Pipeline>& pipeline,
 			const Ref<VertexBuffer>& vertexBuffer,
 			const Ref<IndexBuffer>& indexBuffer,
+			uint32_t indexCount = 0
+		);
+
+		static void Submit(
+			const Ref<Pipeline>& pipeline,
+			const Ref<VertexBuffer>& vertexBuffer,
+			const Ref<IndexBuffer>& indexBuffer,
+			const Ref<Material>& material,
+			uint32_t indexCount = 0
+		);
+
+		static void Submit(
+			const Ref<Pipeline>& pipeline,
+			const Ref<VertexBuffer>& vertexBuffer,
+			const Ref<IndexBuffer>& indexBuffer,
+			const Ref<MaterialInstance>& materialInstance,
 			uint32_t indexCount = 0
 		);
 		

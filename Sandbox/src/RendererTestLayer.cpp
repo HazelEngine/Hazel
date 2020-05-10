@@ -3,12 +3,24 @@
 #include <imgui.h>
 #include <glm/gtc/type_ptr.hpp>
 
+Ref<Material> g_Material;
+Ref<MaterialInstance> g_Instance1;
+Ref<MaterialInstance> g_Instance2;
+
+Ref<VertexBuffer> g_QuadVertBuff;
+Ref<IndexBuffer>  g_QuadIndxBuff;
+Ref<VertexBuffer> g_TriangleVertBuff;
+Ref<IndexBuffer>  g_TriangleIndxBuff;
+
+Ref<Texture2D>  g_CirclesTex;
+
 RendererTestLayer::RendererTestLayer()
 	: Layer("RendererTestLayer"), m_CameraController(1280.0f / 720.0f, true) {}
 
 void RendererTestLayer::OnAttach()
 {
 	m_CheckerboardTex = Texture2D::Create("assets/Textures/Checkerboard_SemiTransparent.png");
+	//g_CirclesTex = Texture2D::Create("assets/Textures/Circles.jpg");
 	m_PikachuTex = Texture2D::Create("assets/Textures/Pikachu.png");
 	m_EeveeTex = Texture2D::Create("assets/Textures/Eevee.png");
 
@@ -22,6 +34,23 @@ void RendererTestLayer::OnAttach()
 	);
 
 	m_Shader->BindTexture("u_Texture", m_CheckerboardTex);
+
+	g_Material = Material::Create(m_Shader);
+	glm::vec4 basecolor = { 0.0f, 1.0f, 0.0f, 1.0f };
+	g_Material->Set("Albedo", basecolor);
+	g_Material->Bind();
+
+	g_Instance1 = MaterialInstance::Create(g_Material);
+	glm::vec4 color1 = { 1.0f, 0.0f, 0.0f, 1.0f };
+	g_Instance1->Set("Albedo", color1);
+	g_Instance1->Set("u_Texture", m_EeveeTex);
+	g_Instance1->Bind();
+
+	g_Instance2 = MaterialInstance::Create(g_Material);
+	glm::vec4 color2 = { 0.0f, 0.0f, 1.0f, 1.0f };
+	g_Instance2->Set("Albedo", color2);
+	g_Instance2->Set("u_Texture", m_PikachuTex);
+	g_Instance2->Bind();
 
 	// NOTE: Should set layout in pipeline, or should get pipeline from shader binary?
 	PipelineSpecification pipelineSpec;
@@ -60,6 +89,31 @@ void RendererTestLayer::OnAttach()
 	RenderPassSpecification renderPassSpec;
 	renderPassSpec.TargetFramebuffer = Framebuffer::Create(framebufferSpec);
 	m_RenderPass = RenderPass::Create(renderPassSpec);
+
+	//////////////////////////////////////////////////////////////////////////////////////
+
+	Vertex quadVert[4] =
+	{
+		{{ -2.5f,  1.0f, 0.0f }, { 1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }},
+		{{ -3.5f,  1.0f, 0.0f }, { 0.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }},
+		{{ -3.5f, -1.0f, 0.0f }, { 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }},
+		{{ -2.5f, -1.0f, 0.0f }, { 1.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }}
+	};
+
+	g_QuadVertBuff = VertexBuffer::Create(quadVert, sizeof(quadVert));
+	g_QuadIndxBuff = IndexBuffer::Create(indices, 6);
+
+	Vertex triangleVert[3] =
+	{
+		{{ 2.5f, -1.0f, 0.0f }, { 1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }},
+		{{ 4.5f, -1.0f, 0.0f }, { 0.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }},
+		{{ 3.5f,  1.0f, 0.0f }, { 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }}
+	};
+
+	uint32_t triangleIndx[3] = { 0, 1, 2 };
+
+	g_TriangleVertBuff = VertexBuffer::Create(triangleVert, sizeof(triangleVert));
+	g_TriangleIndxBuff = IndexBuffer::Create(triangleIndx, 3);
 }
 
 void RendererTestLayer::OnDetach() {}
@@ -71,6 +125,9 @@ void RendererTestLayer::OnUpdate(Timestep ts)
 
 	// Reset statistics
 	Renderer2D::ResetStatistics();
+
+	// Get a new Swapchain image
+	Renderer::Prepare();
 
 	Renderer::BeginRenderPass(m_RenderPass);
 	Renderer2D::BeginScene(m_CameraController.GetCamera());
@@ -87,7 +144,7 @@ void RendererTestLayer::OnUpdate(Timestep ts)
 	Renderer2D::DrawQuad({ -1.5f, 0.0f }, { 1.0f, 1.0f }, { 1.0f, 0.0f, 0.0f, 1.0f });
 	Renderer2D::DrawQuad({ 1.0f, 0.0f }, { 1.0f, 1.0f }, m_PikachuTex);
 	Renderer2D::DrawQuad({ 1.0f, -2.0f }, { 1.0f, 1.0f }, m_EeveeTex);
-
+	
 	static float rotation = 0.0f;
 	rotation += 0.9f * ts;
 	Renderer2D::DrawRotatedQuad({ 1.0f, 2.0f }, { 1.0f, 1.0f }, rotation, m_EeveeTex);
@@ -97,10 +154,12 @@ void RendererTestLayer::OnUpdate(Timestep ts)
 	
 	glm::mat4 viewProj = m_CameraController.GetCamera().GetViewProjectionMatrix();
 	m_Shader->SetUniformBuffer("u_SceneData", &viewProj, sizeof(glm::mat4));
-	
-	Renderer::Submit(m_Pipeline, m_VertexBuffer, m_IndexBuffer);
+
+	Renderer::Submit(m_Pipeline, m_VertexBuffer, m_IndexBuffer, g_Material);
+	Renderer::Submit(m_Pipeline, g_TriangleVertBuff, g_TriangleIndxBuff, g_Instance1);
+	Renderer::Submit(m_Pipeline, g_QuadVertBuff, g_QuadIndxBuff, g_Instance2);
+
 	Renderer::EndRenderPass();
-	
 	Renderer::FlushCommandBuffer();
 }
 

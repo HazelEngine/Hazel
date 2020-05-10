@@ -49,7 +49,7 @@ namespace Hazel {
 	}
 
 	OpenGLShader::OpenGLShader(const ShaderCreateInfo& info)
-		: m_Name(info.Name)
+		: m_Name(info.Name), m_MaterialCount(0)
 	{
 		HZ_PROFILE_FUNCTION()
 		
@@ -146,12 +146,12 @@ namespace Hazel {
 		HZ_CORE_ERROR("Shader uniform buffer {0} doesn't exists!", name)
 	}
 
-	void OpenGLShader::BindTexture(const std::string& name, const Ref<Texture2D>& texture)
+	void OpenGLShader::BindTexture(const std::string& name, const Ref<Texture>& texture)
 	{
 		BindTexture(name, 0, texture);
 	}
 
-	void OpenGLShader::BindTexture(const std::string& name, uint32_t index, const Ref<Texture2D>& texture)
+	void OpenGLShader::BindTexture(const std::string& name, uint32_t index, const Ref<Texture>& texture)
 	{
 		for (ShaderResource resource : m_ShaderResources)
 		{
@@ -179,12 +179,16 @@ namespace Hazel {
 		HZ_CORE_ERROR("Has no {0} texture in the shader {1}", name, m_Name)
 	}
 
-	Ref<Texture2D> OpenGLShader::GetTexture(const std::string& name) const
+	void OpenGLShader::BindTextureToPool(const std::string& name, const Ref<Texture>& texture)
+	{
+	}
+
+	Ref<Texture> OpenGLShader::GetTexture(const std::string& name) const
 	{
 		return GetTexture(name, 0);
 	}
 
-	Ref<Texture2D> OpenGLShader::GetTexture(const std::string& name, uint32_t index) const
+	Ref<Texture> OpenGLShader::GetTexture(const std::string& name, uint32_t index) const
 	{
 		auto textures = m_Textures.at(name);
 		HZ_CORE_ASSERT(
@@ -194,9 +198,9 @@ namespace Hazel {
 		return textures[index];
 	}
 
-	std::vector<Ref<Texture2D>> OpenGLShader::GetTextures() const
+	std::vector<Ref<Texture>> OpenGLShader::GetTextures() const
 	{
-		std::vector<Ref<Texture2D>> textures;
+		std::vector<Ref<Texture>> textures;
 
 		// TODO: Inefficient, should be called just only when textures change
 		// Loop through all the texture arrays and copy the texture refs in the arrays
@@ -207,6 +211,10 @@ namespace Hazel {
 		}
 
 		return textures;
+	}
+
+	void OpenGLShader::SetMaterialUniformBuffer(Buffer buffer, uint32_t materialIndex)
+	{
 	}
 
 	std::vector<Ref<UniformBuffer>> OpenGLShader::GetUniformBuffers() const
@@ -533,7 +541,7 @@ namespace Hazel {
 				uint32_t content = 0xFFFF00FF;
 				Ref<Texture2D> defaultTex = Texture2D::Create(&content, 1, 1, 4);
 				
-				std::vector<Ref<Texture2D>> textures(resource.ArraySize);
+				std::vector<Ref<Texture>> textures(resource.ArraySize);
 
 				for (uint32_t i = 0; i < resource.ArraySize; i++)
 				{

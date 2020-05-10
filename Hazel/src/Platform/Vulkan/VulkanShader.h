@@ -3,28 +3,16 @@
 #include <Hazel/Renderer/Shader.h>
 #include <Hazel/Renderer/Buffer.h>
 
+#include <Platform/Vulkan/VulkanShaderUniform.h>
+
 #include <vulkan/vulkan.hpp>
+
+#define MAX_MAT_INSTANCES 20
 
 namespace Hazel {
 
 	class HAZEL_API VulkanShader : public Shader
 	{
-	public:
-		struct ShaderResource
-		{
-			uint32_t Binding;
-			std::string Name;
-			VkShaderStageFlags StageFlags;
-			VkDescriptorType DescriptorType;
-			uint32_t DescriptorCount;
-
-			uint32_t Size;
-
-			bool IsBuffer = false;
-			bool IsImage = false;
-			bool IsSampler = false;
-		};
-
 	public:
 		VulkanShader(const ShaderCreateInfo& info);
 		virtual ~VulkanShader() = default;
@@ -43,13 +31,33 @@ namespace Hazel {
 		virtual void SetMat3(const std::string& name, const glm::mat3& value) override;
 		virtual void SetMat4(const std::string& name, const glm::mat4& value) override;
 
+		virtual const ShaderUniformBufferList GetVSUniformBuffers() const override { return m_VSUniformBuffers; }
+		virtual const ShaderUniformBufferList GetPSUniformBuffers() const override { return m_PSUniformBuffers; }
+		virtual const ShaderResourceList GetResources() const override { return m_Resources; }
+
 		virtual void SetUniformBuffer(const std::string& name, void* data, uint32_t size) override;
 
-		virtual void BindTexture(const std::string& name, const Ref<Texture2D>& texture) override;
-		virtual void BindTexture(const std::string& name, uint32_t index, const Ref<Texture2D>& texture) override;
+		virtual void BindTexture(const std::string& name, const Ref<Texture>& texture) override;
+		virtual void BindTexture(const std::string& name, uint32_t index, const Ref<Texture>& texture) override;
 		
-		virtual Ref<Texture2D> GetTexture(const std::string& name) const override;
-		virtual Ref<Texture2D> GetTexture(const std::string& name, uint32_t index) const override;
+		virtual void BindTextureToPool(const std::string& name, const Ref<Texture>& texture) override;
+		
+		virtual Ref<Texture> GetTexture(const std::string& name) const override;
+		virtual Ref<Texture> GetTexture(const std::string& name, uint32_t index) const override;
+
+		// Specific to Material uniforms
+		virtual bool HasVSMaterialUniformBuffer() const override { return (bool)m_VSMaterialUniformBuffer; }
+		virtual bool HasPSMaterialUniformBuffer() const override { return (bool)m_PSMaterialUniformBuffer; }
+		virtual const ShaderUniformBufferDeclaration& GetVSMaterialUniformBuffer() const override { return *m_VSMaterialUniformBuffer; }
+		virtual const ShaderUniformBufferDeclaration& GetPSMaterialUniformBuffer() const override { return *m_PSMaterialUniformBuffer; }
+		virtual void SetMaterialUniformBuffer(Buffer buffer, uint32_t materialIndex) override;
+		
+		virtual uint32_t GetMaterialCount() const override { return m_MaterialCount; }
+		virtual void SetMaterialCount(uint32_t count) override { m_MaterialCount = count; }
+
+		virtual uint32_t GetMaterialUniformBufferAlignment() const { return m_MaterialUniformBufferAlignment; }
+
+		const VkDescriptorSet& GetTexturePoolDescriptorSet(const Ref<Texture>& texture) { return m_TexturePool[texture]; }
 
 		virtual const std::string& GetName() const override { return m_Name; }
 
@@ -57,22 +65,49 @@ namespace Hazel {
 		VkShaderModule GetFragmentShaderModule() const { return m_FragmentShaderModule; }
 
 		VkPipelineLayout GetPipelineLayout() const { return m_PipelineLayout; }
-		const VkDescriptorSet& GetDescriptorSet() const { return m_DescriptorSet; }
+
+		const VkDescriptorSet& GetGlobalDescriptorSet() const { return m_GlobalDescriptorSet; }
+		const VkDescriptorSet& GetTextureDescriptorSet() const { return m_TextureDescriptorSet; }
 
 	private:
 		void CreateSamplers();
-		void CreateDescriptorSet();
+		void CreateDescriptorSets();
 		void CreatePipelineLayout();
 
-		void GetShaderResources(const std::vector<uint32_t>& spirv, VkShaderStageFlags stage);
+		const VkDescriptorSet& CreateDescriptorSetForTexture(const Ref<Texture>& texture);
+
+		// TODO: Remove set, and set set inside resource
+		void UpdateDescriptorSet(VulkanShaderResourceDeclaration* resource, VkDescriptorSet set);
+		void UpdateDescriptorSet(VulkanShaderUniformBufferDeclaration* ubuffer);
+		void UpdateDescriptorSets();
+
+		void GetShaderResources(const std::vector<uint32_t>& spirv, ShaderDomain domain);
 		void GenerateShaderResources();
+
+		VkDescriptorType GetDescriptorType(VulkanShaderResourceDeclaration::Type type);
+		VkShaderStageFlags GetDescriptorStage(ShaderDomain domain);
 
 	private:
 		std::string m_Name;
 
-		std::vector<ShaderResource> m_ShaderResources;
+		// Shader resource declarations
+		ShaderUniformBufferList m_VSUniformBuffers;
+		ShaderUniformBufferList m_PSUniformBuffers;
+		ShaderResourceList m_Resources;
+
+		// Specific material resource declarations
+		Scope<VulkanShaderUniformBufferDeclaration> m_VSMaterialUniformBuffer;
+		Scope<VulkanShaderUniformBufferDeclaration> m_PSMaterialUniformBuffer;
+		Scope<UniformBuffer> m_MaterialUniformBuffer;
+		uint32_t m_MaterialUniformBufferAlignment;
+		uint32_t m_MaterialCount;
+
+		// Shader resources
 		std::unordered_map<std::string, Ref<UniformBuffer>> m_UniformBuffers;
-		std::unordered_map<std::string, std::vector<Ref<Texture2D>>> m_Textures;
+		std::unordered_map<std::string, std::vector<Ref<Texture>>> m_Textures;
+
+		// Store all textures that have been binded to shader and his description
+		std::unordered_map<Ref<Texture>, VkDescriptorSet> m_TexturePool;
 
 		VkShaderModule m_VertexShaderModule = VK_NULL_HANDLE;
 		VkShaderModule m_FragmentShaderModule = VK_NULL_HANDLE;
@@ -80,8 +115,13 @@ namespace Hazel {
 		// TODO: Put inside Texture or Sample class (static)
 		std::vector<VkSampler> m_Samplers;
 
-		VkDescriptorSet m_DescriptorSet = VK_NULL_HANDLE;
-		VkDescriptorSetLayout m_DescriptorSetLayout = VK_NULL_HANDLE;
+		// This descriptor set is used for all global data (with set = 0)
+		VkDescriptorSet m_GlobalDescriptorSet = VK_NULL_HANDLE;
+		VkDescriptorSetLayout m_GlobalDescriptorSetLayout = VK_NULL_HANDLE;
+
+		// All the textures should have to be binded to this set (set = 1)
+		VkDescriptorSet m_TextureDescriptorSet = VK_NULL_HANDLE;
+		VkDescriptorSetLayout m_TextureDescriptorSetLayout = VK_NULL_HANDLE;
 
 		VkPipelineLayout m_PipelineLayout = VK_NULL_HANDLE;
 	};

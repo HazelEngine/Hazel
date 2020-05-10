@@ -20,6 +20,22 @@ namespace Hazel {
 			uint32_t indexCount = 0
 		) override;
 
+		virtual void Submit(
+			const Ref<Pipeline>& pipeline,
+			const Ref<VertexBuffer>& vertexBuffer,
+			const Ref<IndexBuffer>& indexBuffer,
+			const Ref<Material>& material,
+			uint32_t indexCount = 0
+		) override;
+
+		virtual void Submit(
+			const Ref<Pipeline>& pipeline,
+			const Ref<VertexBuffer>& vertexBuffer,
+			const Ref<IndexBuffer>& indexBuffer,
+			const Ref<MaterialInstance>& materialInstance,
+			uint32_t indexCount = 0
+		) override;
+
 		virtual void Flush() override;
 
 	private:

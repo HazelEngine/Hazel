@@ -58,6 +58,9 @@ namespace Hazel {
 		CreateCommandPool();
 		CreateCommandBuffers();
 
+		// Create DescriptorPool
+		CreateDescriptorPool();
+
 		// Semaphores
 		VkSemaphoreCreateInfo semaphoreInfo = {};
 		semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -286,8 +289,42 @@ namespace Hazel {
 		));
 	}
 
+	void VulkanContext::CreateDescriptorPool()
+	{
+		VkDescriptorPoolSize poolSizes[5] = {};
+		poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		poolSizes[0].descriptorCount = MAX_DESCRIPTOR_UBUFFER;
+
+		poolSizes[1].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+		poolSizes[1].descriptorCount = MAX_DESCRIPTOR_UBUFFER_DYNAMIC;
+
+		poolSizes[2].type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+		poolSizes[2].descriptorCount = MAX_DESCRIPTOR_SAMPLED_IMAGE;
+
+		poolSizes[3].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		poolSizes[3].descriptorCount = MAX_DESCRIPTOR_COMBINED_IMAGE_SAMPLER;
+
+		poolSizes[4].type = VK_DESCRIPTOR_TYPE_SAMPLER;
+		poolSizes[4].descriptorCount = MAX_DESCRIPTOR_SAMPLER;
+
+		VkDescriptorPoolCreateInfo descriptorPoolInfo = {};
+		descriptorPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+		descriptorPoolInfo.maxSets = MAX_DESCRIPTOR_SETS;
+		descriptorPoolInfo.pPoolSizes = poolSizes;
+		descriptorPoolInfo.poolSizeCount = sizeof(poolSizes) / sizeof(VkDescriptorPoolSize);
+
+		VK_CHECK_RESULT(vkCreateDescriptorPool(
+			m_Device->GetLogicalDevice(),
+			&descriptorPoolInfo,
+			nullptr,
+			&m_DescriptorPool
+		));
+	}
+
 	void VulkanContext::Cleanup()
 	{
+		vkDestroyDescriptorPool(m_Device->GetLogicalDevice(), m_DescriptorPool, nullptr);
+
 		vkDestroySemaphore(m_Device->GetLogicalDevice(), m_ImageAcquiredSemaphore, nullptr);
 		vkDestroySemaphore(m_Device->GetLogicalDevice(), m_RenderingCompleteSemaphore, nullptr);
 	

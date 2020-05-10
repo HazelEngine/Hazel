@@ -17,7 +17,7 @@
 namespace Hazel {
 
 	VulkanShader::VulkanShader(const ShaderCreateInfo& info)
-		: m_Name(info.Name)
+		: m_Name(info.Name), m_MaterialCount(0)
 	{
 		VulkanContext* vk_Context = dynamic_cast<VulkanContext*>(Renderer::GetContext());
 		auto& device = vk_Context->GetDevice();
@@ -45,13 +45,13 @@ namespace Hazel {
 			&m_FragmentShaderModule
 		));
 
-		GetShaderResources(info.VertexShaderSource, VK_SHADER_STAGE_VERTEX_BIT);
-		GetShaderResources(info.FragmentShaderSource, VK_SHADER_STAGE_FRAGMENT_BIT);
+		GetShaderResources(info.VertexShaderSource, ShaderDomain::Vertex);
+		GetShaderResources(info.FragmentShaderSource, ShaderDomain::Pixel);
 
 		GenerateShaderResources();
 
 		CreateSamplers();
-		CreateDescriptorSet();
+		CreateDescriptorSets();
 		CreatePipelineLayout();
 	}
 
@@ -121,22 +121,20 @@ namespace Hazel {
 		HZ_CORE_ERROR("Shader uniform buffer {0} doesn't exists!", name)
 	}
 
-	void VulkanShader::BindTexture(const std::string& name, const Ref<Texture2D>& texture)
+	void VulkanShader::BindTexture(const std::string& name, const Ref<Texture>& texture)
 	{
 		BindTexture(name, 0, texture);
 	}
 
-	void VulkanShader::BindTexture(const std::string& name, uint32_t index, const Ref<Texture2D>& texture)
+	void VulkanShader::BindTexture(const std::string& name, uint32_t index, const Ref<Texture>& texture)
 	{
-		VulkanContext* vk_Context = dynamic_cast<VulkanContext*>(Renderer::GetContext());
-		auto& vk_Device = vk_Context->GetDevice(); // TODO: Remove
 		VulkanTexture2D* vk_Texture = dynamic_cast<VulkanTexture2D*>(texture.get());
 
-		for (ShaderResource resource : m_ShaderResources)
+		for (auto resource : m_Resources)
 		{
-			if (resource.Name == name)
+			if (resource->GetName() == name)
 			{
-				if (index > resource.DescriptorCount)
+				if (index > resource->GetCount())
 				{
 					HZ_CORE_ERROR("Has no slot {0} in the texture {1}.", index, name)
 					return;
@@ -147,28 +145,8 @@ namespace Hazel {
 				textures[index] = texture;
 				m_Textures[name] = textures;
 
-				// Update Descriptor Sets
-
-				VkWriteDescriptorSet writeDescriptorSets = {};
-				writeDescriptorSets.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-				writeDescriptorSets.dstSet = m_DescriptorSet;
-				writeDescriptorSets.dstBinding = resource.Binding;
-				writeDescriptorSets.descriptorType = resource.DescriptorType;
-				writeDescriptorSets.descriptorCount = resource.DescriptorCount;
-
-				std::vector<VkDescriptorImageInfo> imageInfos(resource.DescriptorCount);
-
-				// Loop through all textures in the array, to get descriptor infos
-				for (uint32_t i = 0; i < textures.size(); i++)
-				{
-					// Cast to Vulkan Texture, so we can get descriptor info (specific to VK)
-					auto vk_Texture = dynamic_cast<VulkanTexture2D*>(textures[i].get());
-					imageInfos[i] = vk_Texture->GetDescriptorInfo();
-				}
-					
-				writeDescriptorSets.pImageInfo = imageInfos.data();
-
-				vkUpdateDescriptorSets(vk_Device->GetLogicalDevice(), 1, &writeDescriptorSets, 0, nullptr);
+				// Update Descriptor Set with the texture data
+				UpdateDescriptorSet((VulkanShaderResourceDeclaration*)resource, m_TextureDescriptorSet);
 				
 				return;
 			}
@@ -177,12 +155,43 @@ namespace Hazel {
 		HZ_CORE_ERROR("Has no {0} texture in the shader {1}", name, m_Name)
 	}
 
-	Ref<Texture2D> VulkanShader::GetTexture(const std::string& name) const
+	void VulkanShader::BindTextureToPool(const std::string& name, const Ref<Texture>& texture)
+	{
+		VulkanTexture2D* vk_Texture = dynamic_cast<VulkanTexture2D*>(texture.get());
+
+		for (auto resource : m_Resources)
+		{
+			if (resource->GetName() == name)
+			{
+				// Get the textures, update the texture in the index, and set textures back
+				auto& textures = m_Textures[name];
+				textures[0] = texture;
+				m_Textures[name] = textures;
+
+				// Try to find the descritor, if not created yet, create and save it
+				auto set = GetTexturePoolDescriptorSet(texture);
+				if (set == VK_NULL_HANDLE)
+				{
+					// Create and save the descriptor in the pool
+					set = CreateDescriptorSetForTexture(texture);
+				}
+
+				// Update Descriptor Set with the texture data
+				UpdateDescriptorSet((VulkanShaderResourceDeclaration*)resource, set);
+				
+				return;
+			}
+		}
+
+		HZ_CORE_ERROR("Has no {0} texture in the shader {1}", name, m_Name)
+	}
+
+	Ref<Texture> VulkanShader::GetTexture(const std::string& name) const
 	{
 		return GetTexture(name, 0);
 	}
 
-	Ref<Texture2D> VulkanShader::GetTexture(const std::string& name, uint32_t index) const
+	Ref<Texture> VulkanShader::GetTexture(const std::string& name, uint32_t index) const
 	{
 		auto textures = m_Textures.at(name);
 		HZ_CORE_ASSERT(
@@ -190,6 +199,19 @@ namespace Hazel {
 			"Has no texture data in the index " + std::to_string(index) + " from the texture " + name
 		)
 		return textures[index];
+	}
+
+	void VulkanShader::SetMaterialUniformBuffer(Buffer buffer, uint32_t materialIndex)
+	{
+		auto vk_Buffer = dynamic_cast<VulkanUniformBuffer*>(m_MaterialUniformBuffer.get());
+		auto offset = materialIndex * m_MaterialUniformBufferAlignment;
+		
+		HZ_CORE_ASSERT(offset + buffer.Size <= vk_Buffer->GetSize(), "Material Uniform Buffer overflow!")
+
+		byte* mapped = (byte*)m_MaterialUniformBuffer->Map();
+		memcpy(mapped + offset, buffer.Data, buffer.Size);
+		m_MaterialUniformBuffer->Unmap(buffer.Size);
+		return;
 	}
 
 	void VulkanShader::CreateSamplers()
@@ -215,7 +237,7 @@ namespace Hazel {
 		m_Samplers.push_back(sampler);
 	}
 
-	void VulkanShader::CreateDescriptorSet()
+	void VulkanShader::CreateDescriptorSets()
 	{
 		VulkanContext* vk_Context = dynamic_cast<VulkanContext*>(Renderer::GetContext());
 		auto& vk_Device = vk_Context->GetDevice();
@@ -224,23 +246,90 @@ namespace Hazel {
 
 		// Descriptor Set Layout Bindings
 
-		std::vector<VkDescriptorSetLayoutBinding> layoutBindings(m_ShaderResources.size());
-		for (ShaderResource resource : m_ShaderResources)
+		// Uniform buffers count
+		uint32_t ubufferCount = m_VSUniformBuffers.size() + m_PSUniformBuffers.size();
+		
+		if (HasVSMaterialUniformBuffer() || HasPSMaterialUniformBuffer())
+			ubufferCount++;
+
+		// TODO: Optimize
+		// Resources count
+		uint32_t samplerCount = 0, textureCount = 0;
+		for (auto resource : m_Resources)
+		{
+			auto vk_Resource = dynamic_cast<VulkanShaderResourceDeclaration*>(resource);
+			switch (vk_Resource->GetType())
+			{
+				case VulkanShaderResourceDeclaration::Type::SampledImage:	textureCount++; break;
+				case VulkanShaderResourceDeclaration::Type::Image:			textureCount++; break;
+				case VulkanShaderResourceDeclaration::Type::Sampler:		samplerCount++; break;
+			}
+		}
+
+		// Total binding count
+		uint32_t bindingCount = ubufferCount + samplerCount;
+		std::vector<VkDescriptorSetLayoutBinding> layoutBindings(bindingCount);
+		
+		// VS Uniform Buffers
+		for (auto ubuffer : m_VSUniformBuffers)
 		{
 			VkDescriptorSetLayoutBinding layoutBinding = {};
-			layoutBinding.binding = resource.Binding;
-			layoutBinding.descriptorCount = resource.DescriptorCount;
-			layoutBinding.descriptorType = resource.DescriptorType;
-			layoutBinding.stageFlags = resource.StageFlags;
+			layoutBinding.binding = ubuffer->GetBinding();
+			layoutBinding.descriptorCount = 1;
+			layoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			layoutBinding.stageFlags = GetDescriptorStage(ubuffer->GetDomain());
 
-			if (resource.IsSampler)
+			layoutBindings[index++] = layoutBinding;
+		}
+
+		// PS Uniform Buffers
+		for (auto ubuffer : m_PSUniformBuffers)
+		{
+			VkDescriptorSetLayoutBinding layoutBinding = {};
+			layoutBinding.binding = ubuffer->GetBinding();
+			layoutBinding.descriptorCount = 1;
+			layoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			layoutBinding.stageFlags = GetDescriptorStage(ubuffer->GetDomain());
+
+			layoutBindings[index++] = layoutBinding;
+		}
+
+		// Material specific uniform buffers
+		if (HasVSMaterialUniformBuffer() || HasPSMaterialUniformBuffer()) 
+		{
+			ShaderUniformBufferDeclaration* ubuffer;
+			if (HasVSMaterialUniformBuffer())
+				ubuffer = m_VSMaterialUniformBuffer.get();
+			else 
+				ubuffer = m_PSMaterialUniformBuffer.get();
+
+			VkDescriptorSetLayoutBinding layoutBinding = {};
+			layoutBinding.binding = ubuffer->GetBinding();
+			layoutBinding.descriptorCount = 1;
+			layoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+			layoutBinding.stageFlags = GetDescriptorStage(ubuffer->GetDomain());
+			layoutBindings[index++] = layoutBinding;
+		}
+		
+		// Samplers
+		for (auto resource : m_Resources)
+		{
+			auto vk_Resource = dynamic_cast<VulkanShaderResourceDeclaration*>(resource);
+
+			if (vk_Resource->GetType() == VulkanShaderResourceDeclaration::Type::Sampler)
 			{
+				VkDescriptorSetLayoutBinding layoutBinding = {};
+				layoutBinding.binding = resource->GetBinding();
+				layoutBinding.descriptorCount = resource->GetCount();
+				layoutBinding.descriptorType = GetDescriptorType(vk_Resource->GetType());
+				layoutBinding.stageFlags = GetDescriptorStage(resource->GetDomain());
+
 				// Set the immutable samplers here, these are default
 				// samplers used through all the application
 				layoutBinding.pImmutableSamplers = m_Samplers.data();
+				
+				layoutBindings[index++] = layoutBinding;
 			}
-
-			layoutBindings[index++] = layoutBinding;
 		}
 
 		// Descriptor Set Layout
@@ -254,107 +343,80 @@ namespace Hazel {
 			vk_Device->GetLogicalDevice(),
 			&descriptorSetLayoutInfo,
 			nullptr,
-			&m_DescriptorSetLayout
+			&m_GlobalDescriptorSetLayout
 		));
 
-		// Descriptor Pool Sizes
+		// TODO: Should account the layout for all the textures in both shaders
+		// Textures Descriptor Set Layouts
 
-		std::unordered_map<VkDescriptorType, uint32_t> descriptors;
-		for (ShaderResource resource : m_ShaderResources)
+		index = 0;
+		std::vector<VkDescriptorSetLayoutBinding> textureBindings(textureCount);
+		
+		// Textures
+		for (auto resource : m_Resources)
 		{
-			uint32_t count = descriptors[resource.DescriptorType];
-			descriptors[resource.DescriptorType] = count + resource.DescriptorCount;
+			auto vk_Resource = dynamic_cast<VulkanShaderResourceDeclaration*>(resource);
+
+			if (vk_Resource->GetType() == VulkanShaderResourceDeclaration::Type::Image ||
+				vk_Resource->GetType() == VulkanShaderResourceDeclaration::Type::SampledImage)
+			{
+				VkDescriptorSetLayoutBinding layoutBinding = {};
+				layoutBinding.binding = resource->GetBinding();
+				layoutBinding.descriptorCount = resource->GetCount();
+				layoutBinding.descriptorType = GetDescriptorType(vk_Resource->GetType());
+				layoutBinding.stageFlags = GetDescriptorStage(resource->GetDomain());
+				
+				textureBindings[index++] = layoutBinding;
+			}
 		}
 
+		descriptorSetLayoutInfo.pBindings = textureBindings.data();
+		descriptorSetLayoutInfo.bindingCount = textureBindings.size();
+
+		VK_CHECK_RESULT(vkCreateDescriptorSetLayout(
+			vk_Device->GetLogicalDevice(),
+			&descriptorSetLayoutInfo,
+			nullptr,
+			&m_TextureDescriptorSetLayout
+		));
+
 		// If has descriptors, create them
-		if (descriptors.size() > 0)
+		if (bindingCount > 0)
 		{
-			index = 0;
-			std::vector<VkDescriptorPoolSize> poolSizes(descriptors.size());
-			for (auto type : descriptors)
-			{
-				VkDescriptorPoolSize poolSize = {};
-				poolSize.type = type.first;
-				poolSize.descriptorCount = type.second;
-
-				poolSizes[index++] = poolSize;
-			}
-
-			// Descriptor Pool
-
-			VkDescriptorPoolCreateInfo descriptorPoolInfo = {};
-			descriptorPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-			descriptorPoolInfo.maxSets = 1; // max allocated descriptor sets ?
-			descriptorPoolInfo.pPoolSizes = poolSizes.data();
-			descriptorPoolInfo.poolSizeCount = poolSizes.size();
-
-			VkDescriptorPool descriptorPool;
-			VK_CHECK_RESULT(vkCreateDescriptorPool(
-				vk_Device->GetLogicalDevice(),
-				&descriptorPoolInfo,
-				nullptr,
-				&descriptorPool
-			));
-
-			// Descriptor Set Allocate
-
+			// Allocate the Global Descriptor Set
 			VkDescriptorSetAllocateInfo allocInfo = {};
 			allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-			allocInfo.pSetLayouts = &m_DescriptorSetLayout;
+			allocInfo.pSetLayouts = &m_GlobalDescriptorSetLayout;
 			allocInfo.descriptorSetCount = 1;
-			allocInfo.descriptorPool = descriptorPool;
+			allocInfo.descriptorPool = vk_Context->GetDescriptorPool();
 
 			VK_CHECK_RESULT(vkAllocateDescriptorSets(
 				vk_Device->GetLogicalDevice(),
 				&allocInfo,
-				&m_DescriptorSet
+				&m_GlobalDescriptorSet
+			));
+
+		}
+
+		// If has texture descriptors, create them
+		if (textureCount > 0)
+		{
+			// Allocate the Texture Descriptor Set
+			VkDescriptorSetAllocateInfo allocInfo = {};
+			allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+			allocInfo.pSetLayouts = &m_TextureDescriptorSetLayout;
+			allocInfo.descriptorSetCount = 1;
+			allocInfo.descriptorPool = vk_Context->GetDescriptorPool();
+
+			VK_CHECK_RESULT(vkAllocateDescriptorSets(
+				vk_Device->GetLogicalDevice(),
+				&allocInfo,
+				&m_TextureDescriptorSet
 			));
 		}
 
 		// Update Descriptor Sets
-		for (ShaderResource resource : m_ShaderResources)
-		{
-			// Sampler Descriptors doesn't need to be updated
-			if (!resource.IsSampler)
-			{
-				VkWriteDescriptorSet writeDescriptorSets = {};
-				writeDescriptorSets.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-				writeDescriptorSets.dstSet = m_DescriptorSet;
-				writeDescriptorSets.dstBinding = resource.Binding;
-				writeDescriptorSets.descriptorType = resource.DescriptorType;
-				writeDescriptorSets.descriptorCount = resource.DescriptorCount;
-
-				std::vector<VkDescriptorImageInfo> imageInfos;
-
-				// The buffers will be created on shader creation, so update his descriptors here
-				if (resource.IsBuffer)
-				{
-					auto vk_Buffer = dynamic_cast<VulkanUniformBuffer*>(m_UniformBuffers[resource.Name].get());
-					writeDescriptorSets.pBufferInfo = &vk_Buffer->GetDescriptorInfo();
-				}
-				else if (resource.IsImage)
-				{
-					// Resize imageInfos vector
-					imageInfos.resize(resource.DescriptorCount);
-
-					// Get all textures in the array
-					auto& textures = m_Textures[resource.Name];
-
-					// Loop through them, to get descriptor infos
-					for (uint32_t i = 0; i < textures.size(); i++)
-					{
-						// Cast to Vulkan Texture, so we can get descriptor info (specific to VK)
-						auto vk_Texture = dynamic_cast<VulkanTexture2D*>(textures[i].get());
-						VkDescriptorImageInfo info = vk_Texture->GetDescriptorInfo();
-						imageInfos[i] = info;
-					}
-					
-					writeDescriptorSets.pImageInfo = imageInfos.data();
-				}
-
-				vkUpdateDescriptorSets(vk_Device->GetLogicalDevice(), 1, &writeDescriptorSets, 0, nullptr);
-			}
-		}
+		UpdateDescriptorSets();
 	}
 
 	void VulkanShader::CreatePipelineLayout()
@@ -362,11 +424,17 @@ namespace Hazel {
 		VulkanContext* vk_Context = dynamic_cast<VulkanContext*>(Renderer::GetContext());
 		auto& vk_Device = vk_Context->GetDevice();
 
+		std::array<VkDescriptorSetLayout, 2> layouts =
+		{
+			m_GlobalDescriptorSetLayout,
+			m_TextureDescriptorSetLayout
+		};
+
 		// TODO: Set descriptor layouts & push constants
 		VkPipelineLayoutCreateInfo layoutInfo = {};
 		layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		layoutInfo.pSetLayouts = &m_DescriptorSetLayout;
-		layoutInfo.setLayoutCount = 1;
+		layoutInfo.pSetLayouts = layouts.data();
+		layoutInfo.setLayoutCount = layouts.size();;
 
 		VK_CHECK_RESULT(vkCreatePipelineLayout(
 			vk_Device->GetLogicalDevice(),
@@ -376,106 +444,297 @@ namespace Hazel {
 		));
 	}
 
-	// NOTE: Receiving a stage, but some descriptors can be in more than one shader stage
-	void VulkanShader::GetShaderResources(const std::vector<uint32_t>& spirv, VkShaderStageFlags stage)
+	const VkDescriptorSet& VulkanShader::CreateDescriptorSetForTexture(const Ref<Texture>& texture)
+	{
+		VulkanContext* vk_Context = dynamic_cast<VulkanContext*>(Renderer::GetContext());
+		auto& vk_Device = vk_Context->GetDevice();
+
+		// Create and save the descriptor in the pool
+		VkDescriptorSetAllocateInfo allocInfo = {};
+		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+		allocInfo.pSetLayouts = &m_TextureDescriptorSetLayout; // TODO: Should use the layout required by the resource
+		allocInfo.descriptorSetCount = 1;
+		allocInfo.descriptorPool = vk_Context->GetDescriptorPool();
+
+		VkDescriptorSet set;
+		VK_CHECK_RESULT(vkAllocateDescriptorSets(
+			vk_Device->GetLogicalDevice(),
+			&allocInfo,
+			&set
+		));
+
+		m_TexturePool[texture] = set;
+
+		return set;
+	}
+
+	void VulkanShader::UpdateDescriptorSet(VulkanShaderResourceDeclaration* resource, VkDescriptorSet set)
+	{
+		// Sampler Descriptors doesn't need to be updated
+		if (resource->GetType() != VulkanShaderResourceDeclaration::Type::Sampler)
+		{
+			VulkanContext* vk_Context = dynamic_cast<VulkanContext*>(Renderer::GetContext());
+			auto& vk_Device = vk_Context->GetDevice();
+
+			// Get all textures in the array
+			auto& textures = m_Textures[resource->GetName()];
+				
+			// Loop through them, to get descriptor infos
+			std::vector<VkDescriptorImageInfo> imageInfos(resource->GetCount());
+			for (uint32_t i = 0; i < resource->GetCount(); i++)
+			{
+				// Cast to Vulkan Texture, so we can get descriptor info (specific to VK)
+				auto vk_Texture = dynamic_cast<VulkanTexture2D*>(textures[i].get());
+				VkDescriptorImageInfo info = vk_Texture->GetDescriptorInfo();
+				imageInfos[i] = info;
+			}
+
+			VkWriteDescriptorSet writeDescriptorSet = {};
+			writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			writeDescriptorSet.dstSet = set;
+			writeDescriptorSet.dstBinding = resource->GetBinding();
+			writeDescriptorSet.descriptorType = GetDescriptorType(resource->GetType());
+			writeDescriptorSet.descriptorCount = resource->GetCount();					
+			writeDescriptorSet.pImageInfo = imageInfos.data();
+
+			vkUpdateDescriptorSets(vk_Device->GetLogicalDevice(), 1, &writeDescriptorSet, 0, nullptr);
+		}
+	}
+
+	void VulkanShader::UpdateDescriptorSet(VulkanShaderUniformBufferDeclaration* ubuffer)
+	{
+		VulkanContext* vk_Context = dynamic_cast<VulkanContext*>(Renderer::GetContext());
+		auto& vk_Device = vk_Context->GetDevice();
+
+		auto vk_Buffer = dynamic_cast<VulkanUniformBuffer*>(m_UniformBuffers[ubuffer->GetName()].get());
+			
+		VkWriteDescriptorSet writeDescriptorSet = {};
+		writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		writeDescriptorSet.dstSet = m_GlobalDescriptorSet;
+		writeDescriptorSet.dstBinding = ubuffer->GetBinding();
+		writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		writeDescriptorSet.descriptorCount = 1;
+		writeDescriptorSet.pBufferInfo = &vk_Buffer->GetDescriptorInfo();
+
+		vkUpdateDescriptorSets(vk_Device->GetLogicalDevice(), 1, &writeDescriptorSet, 0, nullptr);
+	}
+
+	void VulkanShader::UpdateDescriptorSets()
+	{
+		VulkanContext* vk_Context = dynamic_cast<VulkanContext*>(Renderer::GetContext());
+		auto& vk_Device = vk_Context->GetDevice();
+
+		// The buffers will be created on shader creation, so update his descriptors here
+		std::vector<VkWriteDescriptorSet> writeDescriptorSets;
+
+		// VS Uniform Buffer
+		for (auto ubuffer : m_VSUniformBuffers)
+		{
+			auto vk_Buffer = dynamic_cast<VulkanUniformBuffer*>(m_UniformBuffers[ubuffer->GetName()].get());
+			
+			VkWriteDescriptorSet writeDescriptorSet = {};
+			writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			writeDescriptorSet.dstSet = m_GlobalDescriptorSet;
+			writeDescriptorSet.dstBinding = ubuffer->GetBinding();
+			writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			writeDescriptorSet.descriptorCount = 1;
+			writeDescriptorSet.pBufferInfo = &vk_Buffer->GetDescriptorInfo();
+
+			writeDescriptorSets.push_back(writeDescriptorSet);
+		}
+		
+		// PS Uniform Buffers
+		for (auto ubuffer : m_PSUniformBuffers)
+		{
+			auto vk_Buffer = dynamic_cast<VulkanUniformBuffer*>(m_UniformBuffers[ubuffer->GetName()].get());
+			
+			VkWriteDescriptorSet writeDescriptorSet = {};
+			writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			writeDescriptorSet.dstSet = m_GlobalDescriptorSet;
+			writeDescriptorSet.dstBinding = ubuffer->GetBinding();
+			writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			writeDescriptorSet.descriptorCount = 1;
+			writeDescriptorSet.pBufferInfo = &vk_Buffer->GetDescriptorInfo();
+
+			writeDescriptorSets.push_back(writeDescriptorSet);
+		}
+
+		// Material specific uniform buffers
+		if (HasVSMaterialUniformBuffer() || HasPSMaterialUniformBuffer()) 
+		{
+			ShaderUniformBufferDeclaration* ubuffer;
+			if (HasVSMaterialUniformBuffer())
+				ubuffer = m_VSMaterialUniformBuffer.get();
+			else 
+				ubuffer = m_PSMaterialUniformBuffer.get();
+
+			auto vk_Buffer = dynamic_cast<VulkanUniformBuffer*>(m_MaterialUniformBuffer.get());
+			
+			VkWriteDescriptorSet writeDescriptorSet = {};
+			writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			writeDescriptorSet.dstSet = m_GlobalDescriptorSet;
+			writeDescriptorSet.dstBinding = ubuffer->GetBinding();
+			writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+			writeDescriptorSet.descriptorCount = 1;
+			writeDescriptorSet.pBufferInfo = &vk_Buffer->GetDescriptorInfo();
+
+			writeDescriptorSets.push_back(writeDescriptorSet);
+		}
+
+		// Resources
+		std::vector<VkDescriptorImageInfo> imageInfos;
+		for (auto resource : m_Resources)
+		{
+			auto vk_Resource = dynamic_cast<VulkanShaderResourceDeclaration*>(resource);
+			
+			// Sampler Descriptors doesn't need to be updated
+			if (vk_Resource->GetType() != VulkanShaderResourceDeclaration::Type::Sampler)
+			{
+				// Get all textures in the array
+				auto& textures = m_Textures[resource->GetName()];
+				
+				// Loop through them, to get descriptor infos
+				imageInfos.resize(resource->GetCount());
+				for (uint32_t i = 0; i < resource->GetCount(); i++)
+				{
+					// Cast to Vulkan Texture, so we can get descriptor info (specific to VK)
+					auto vk_Texture = dynamic_cast<VulkanTexture2D*>(textures[i].get());
+					VkDescriptorImageInfo info = vk_Texture->GetDescriptorInfo();
+					imageInfos[i] = info;
+				}
+		
+				VkWriteDescriptorSet writeDescriptorSet = {};
+				writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+				writeDescriptorSet.dstSet = m_TextureDescriptorSet;
+				writeDescriptorSet.dstBinding = 0;
+				writeDescriptorSet.descriptorType = GetDescriptorType(vk_Resource->GetType());
+				writeDescriptorSet.descriptorCount = resource->GetCount();					
+				writeDescriptorSet.pImageInfo = imageInfos.data();
+		
+				writeDescriptorSets.push_back(writeDescriptorSet);
+			}
+		}
+
+		vkUpdateDescriptorSets(
+			vk_Device->GetLogicalDevice(),
+			writeDescriptorSets.size(),
+			writeDescriptorSets.data(),
+			0,
+			nullptr
+		);
+	}
+
+	void VulkanShader::GetShaderResources(const std::vector<uint32_t>& spirv, ShaderDomain domain)
 	{
 		spirv_cross::Compiler compiler(spirv);
 		spirv_cross::ShaderResources resources = compiler.get_shader_resources();
 
+		// samplerCube, sampler2D
 		for (const auto& image : resources.sampled_images)
 		{
 			unsigned binding = compiler.get_decoration(image.id, spv::DecorationBinding);
 				
-			// Has at least 1 descriptor
-			uint32_t descriptorCount = 1;
+			// Has at least 1 texture
+			uint32_t count = 1;
 
 			// Check if is an array and his size
-			const auto& type = compiler.get_type(image.type_id);
-			if (type.array.size() > 0)
+			const auto& spvType = compiler.get_type(image.type_id);
+			if (spvType.array.size() > 0)
 			{
-				descriptorCount = 0;
+				count = 0;
 				
-				for (uint32_t i = 0; i < type.array.size(); i++)
+				for (uint32_t i = 0; i < spvType.array.size(); i++)
 				{
-					descriptorCount += type.array[i];
+					count += spvType.array[i];
 				}
 			}
 
-			m_ShaderResources.push_back({
-				binding,
-				image.name,
-				stage,
-				VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-				descriptorCount,
-				0,
-				false,
-				true
-			});
+			// Type here is SampledImage
+			auto type = VulkanShaderResourceDeclaration::Type::SampledImage;
+
+			// Try to get the dimension of this texture
+			auto dimension = VulkanShaderResourceDeclaration::Dimension::None;
+			const auto& spvBaseType = compiler.get_type(image.base_type_id);
+			switch (spvBaseType.image.dim)
+			{
+				case spv::Dim2D:	dimension = VulkanShaderResourceDeclaration::Dimension::Texture2D;   break;
+				case spv::DimCube:	dimension = VulkanShaderResourceDeclaration::Dimension::TextureCube; break;
+			}
+
+			// Create the Resource Declaration
+			auto resourceDecl = new VulkanShaderResourceDeclaration(image.name, binding, domain, type, dimension, count);
+			m_Resources.push_back(resourceDecl);
 		}
 
+		// texture2D
 		for (const auto& image : resources.separate_images)
 		{
 			unsigned binding = compiler.get_decoration(image.id, spv::DecorationBinding);
 				
-			// Has at least 1 descriptor
-			uint32_t descriptorCount = 1;
+			// Has at least 1 resource
+			uint32_t count = 1;
 
 			// Check if is an array and his size
-			const auto& type = compiler.get_type(image.type_id);
-			if (type.array.size() > 0)
+			const auto& spvType = compiler.get_type(image.type_id);
+			if (spvType.array.size() > 0)
 			{
-				descriptorCount = 0;
+				count = 0;
 				
-				for (uint32_t i = 0; i < type.array.size(); i++)
+				for (uint32_t i = 0; i < spvType.array.size(); i++)
 				{
-					descriptorCount += type.array[i];
+					count += spvType.array[i];
 				}
 			}
 
-			m_ShaderResources.push_back({
-				binding,
-				image.name,
-				stage,
-				VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
-				descriptorCount,
-				0,
-				false,
-				true
-			});
+			// Type here is Image
+			auto type = VulkanShaderResourceDeclaration::Type::Image;
+
+			// Try to get the dimension of this texture
+			auto dimension = VulkanShaderResourceDeclaration::Dimension::None;
+			const auto& spvBaseType = compiler.get_type(image.base_type_id);
+			switch (spvBaseType.image.dim)
+			{
+				case spv::Dim2D:	dimension = VulkanShaderResourceDeclaration::Dimension::Texture2D;   break;
+				case spv::DimCube:	dimension = VulkanShaderResourceDeclaration::Dimension::TextureCube; break;
+			}
+
+			// Create the Resource Declaration
+			auto resourceDecl = new VulkanShaderResourceDeclaration(image.name, binding, domain, type, dimension, count);
+			m_Resources.push_back(resourceDecl);
 		}
 
+		// sampler
 		for (const auto& sampler : resources.separate_samplers)
 		{
 			unsigned binding = compiler.get_decoration(sampler.id, spv::DecorationBinding);
 				
-			// Has at least 1 descriptor
-			uint32_t descriptorCount = 1;
+			// Has at least 1 resource
+			uint32_t count = 1;
 
 			// Check if is an array and his size
-			const auto& type = compiler.get_type(sampler.type_id);
-			if (type.array.size() > 0)
+			const auto& spvType = compiler.get_type(sampler.type_id);
+			if (spvType.array.size() > 0)
 			{
-				descriptorCount = 0;
+				count = 0;
 				
-				for (uint32_t i = 0; i < type.array.size(); i++)
+				for (uint32_t i = 0; i < spvType.array.size(); i++)
 				{
-					descriptorCount += type.array[i];
+					count += spvType.array[i];
 				}
 			}
 
-			m_ShaderResources.push_back({
-				binding,
-				sampler.name,
-				stage,
-				VK_DESCRIPTOR_TYPE_SAMPLER,
-				descriptorCount,
-				0,
-				false,
-				false,
-				true
-			});
+			// Type here is Sampler
+			auto type = VulkanShaderResourceDeclaration::Type::Sampler;
+
+			// Sampler has no dimension
+			auto dimension = VulkanShaderResourceDeclaration::Dimension::None;
+
+			// Create the Resource Declaration
+			auto resourceDecl = new VulkanShaderResourceDeclaration(sampler.name, binding, domain, type, dimension, count);
+			m_Resources.push_back(resourceDecl);
 		}
 
+		// uniform buffer
 		for (const auto& ubuffer : resources.uniform_buffers)
 		{
 			unsigned binding = compiler.get_decoration(ubuffer.id, spv::DecorationBinding);
@@ -483,60 +742,183 @@ namespace Hazel {
 			// Uses the name queried using the id, as it returns the variable name rather than block name
 			auto name = compiler.get_name(ubuffer.id);
 
-			const auto& baseType = compiler.get_type(ubuffer.base_type_id);
-			size_t bytes = compiler.get_declared_struct_size(baseType);
-
-			// Has at least 1 descriptor
-			uint32_t descriptorCount = 1;
+			// Has at least 1 uniform
+			uint32_t count = 1;
 
 			// Check if is an array and his size
-			const auto& type = compiler.get_type(ubuffer.type_id);
-			if (type.array.size() > 0)
+			const auto& spvType = compiler.get_type(ubuffer.type_id);
+			if (spvType.array.size() > 0)
 			{
-				descriptorCount = 0;
+				count = 0;
 				
-				for (uint32_t i = 0; i < type.array.size(); i++)
+				for (uint32_t i = 0; i < spvType.array.size(); i++)
 				{
-					descriptorCount += type.array[i];
+					count += spvType.array[i];
 				}
 			}
 
-			m_ShaderResources.push_back({
-				binding,
-				name,
-				stage,
-				VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-				descriptorCount,
-				static_cast<uint32_t>(bytes),
-				true,
-				false
-			});
+			// Create the Uniform Buffer Declaration
+			auto bufferDecl = CreateScope<VulkanShaderUniformBufferDeclaration>(name, binding, domain);
+
+			// Loop through all members of the uniform buffer, and create a Uniform Declaration for each them
+			uint32_t index = 0;
+			const auto& spvBaseType = compiler.get_type(ubuffer.base_type_id);
+			for (auto typeId : spvBaseType.member_types)
+			{
+				auto memberType = compiler.get_type(typeId);
+				auto memberName = compiler.get_member_name(spvBaseType.self, index);
+
+				// Get type
+				auto type = VulkanShaderUniformDeclaration::Type::None;
+				switch (memberType.basetype)
+				{
+				case spirv_cross::SPIRType::Int:
+					type = VulkanShaderUniformDeclaration::Type::Int32;
+					break;
+
+				case spirv_cross::SPIRType::Float:
+					if (memberType.vecsize == 1)
+						type = VulkanShaderUniformDeclaration::Type::Float32;
+					else if (memberType.vecsize == 2)
+						type = VulkanShaderUniformDeclaration::Type::Vec2;
+					else if (memberType.vecsize == 3)
+						type = VulkanShaderUniformDeclaration::Type::Vec3;
+					else if (memberType.vecsize == 2)
+						type = VulkanShaderUniformDeclaration::Type::Vec2;
+					else if (memberType.vecsize == 4 && memberType.columns == 1)
+						type = VulkanShaderUniformDeclaration::Type::Vec4;
+					else if (memberType.vecsize == 4 && memberType.columns == 3)
+						type = VulkanShaderUniformDeclaration::Type::Mat3;
+					else if (memberType.vecsize == 4 && memberType.columns == 4)
+						type = VulkanShaderUniformDeclaration::Type::Mat4;
+					break;
+				}
+
+				auto uniform = new VulkanShaderUniformDeclaration(memberName, domain, type, count);
+				bufferDecl->PushUniform(uniform);
+
+				index++;
+			}
+
+			// TODO: Define this string as static
+			if (ubuffer.name == "MaterialData")
+			{
+				switch (domain)
+				{
+					case Hazel::ShaderDomain::Vertex:
+						m_VSMaterialUniformBuffer = std::move(bufferDecl);
+						break;
+
+					case Hazel::ShaderDomain::Pixel: 
+						m_PSMaterialUniformBuffer = std::move(bufferDecl);
+						break;
+				}
+			}
+			else
+			{
+				auto decl = bufferDecl.release();
+				switch (domain)
+				{
+					case Hazel::ShaderDomain::Vertex: m_VSUniformBuffers.push_back(decl); break;
+					case Hazel::ShaderDomain::Pixel:  m_PSUniformBuffers.push_back(decl); break;
+				}
+			}
 		}
 	}
 
 	void VulkanShader::GenerateShaderResources()
 	{
-		for (ShaderResource resource : m_ShaderResources)
+		// VS Uniform Buffers
+		for (auto ubuffer : m_VSUniformBuffers)
 		{
-			if (resource.IsBuffer)
+			m_UniformBuffers[ubuffer->GetName()] = UniformBuffer::Create(ubuffer->GetSize());
+		}
+
+		// PS Uniform Buffers
+		for (auto ubuffer : m_PSUniformBuffers)
+		{
+			m_UniformBuffers[ubuffer->GetName()] = UniformBuffer::Create(ubuffer->GetSize());
+		}
+
+		// Material Uniform Buffer
+		if (HasVSMaterialUniformBuffer() || HasPSMaterialUniformBuffer())
+		{
+			VulkanContext* vk_Context = dynamic_cast<VulkanContext*>(Renderer::GetContext());
+			auto& vk_Device = vk_Context->GetDevice();
+
+			ShaderUniformBufferDeclaration* ubuffer;
+			if (HasVSMaterialUniformBuffer())
+				ubuffer = m_VSMaterialUniformBuffer.get();
+			else
+				ubuffer = m_PSMaterialUniformBuffer.get();
+
+			uint32_t minUniformBufferAlignment = vk_Device->GetProperties().limits.minUniformBufferOffsetAlignment;
+			m_MaterialUniformBufferAlignment = ubuffer->GetSize();
+			if (minUniformBufferAlignment > 0)
 			{
-				m_UniformBuffers[resource.Name] = UniformBuffer::Create(resource.Size);
+				m_MaterialUniformBufferAlignment =
+					(m_MaterialUniformBufferAlignment + minUniformBufferAlignment - 1) &
+					~(minUniformBufferAlignment - 1);
 			}
-			else if (resource.IsImage)
+
+			// TODO: Should not be VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+			m_MaterialUniformBuffer = CreateScope<VulkanUniformBuffer>(m_MaterialUniformBufferAlignment * MAX_MAT_INSTANCES);
+			std::cout << std::endl;
+		}
+
+		// Textures
+		for (auto resource : m_Resources)
+		{
+			auto vk_Resource = dynamic_cast<VulkanShaderResourceDeclaration*>(resource);
+			
+			// Only process Images and SampledImages
+			if (vk_Resource->GetType() == VulkanShaderResourceDeclaration::Type::Image ||
+				vk_Resource->GetType() == VulkanShaderResourceDeclaration::Type::SampledImage)
 			{
-				// TODO: Set the default magenta texture
+				// TODO: Set the default magenta texture /////////////////////////////
 				uint32_t content = 0xFFFF00FF;
 				Ref<Texture2D> defaultTex = Texture2D::Create(&content, 1, 1, 4);
+				//////////////////////////////////////////////////////////////////////
 
-				std::vector<Ref<Texture2D>> textures(resource.DescriptorCount);
+				std::vector<Ref<Texture>> textures(resource->GetCount());
 				
-				for (uint32_t i = 0; i < resource.DescriptorCount; i++)
+				for (uint32_t i = 0; i < resource->GetCount(); i++)
 				{
-					textures[i] = defaultTex;
+					textures[i] = (const Ref<Texture>&)defaultTex;
 				}
 
-				m_Textures[resource.Name] = textures;
+				m_Textures[resource->GetName()] = textures;
 			}
 		}
 	}
+	
+	VkDescriptorType VulkanShader::GetDescriptorType(VulkanShaderResourceDeclaration::Type type)
+	{
+		switch (type)
+		{
+			case Hazel::VulkanShaderResourceDeclaration::Type::None:
+			case Hazel::VulkanShaderResourceDeclaration::Type::Image:
+				return VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+		
+			case Hazel::VulkanShaderResourceDeclaration::Type::SampledImage:
+				return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+
+			case Hazel::VulkanShaderResourceDeclaration::Type::Sampler:
+				return VK_DESCRIPTOR_TYPE_SAMPLER;
+		}
+	}
+
+	VkShaderStageFlags VulkanShader::GetDescriptorStage(ShaderDomain domain)
+	{
+		switch (domain)
+		{
+			case ShaderDomain::None:
+			case ShaderDomain::Vertex:
+				return VK_SHADER_STAGE_VERTEX_BIT;
+		
+			case ShaderDomain::Pixel:
+				return VK_SHADER_STAGE_FRAGMENT_BIT;
+		}
+	}
+
 }

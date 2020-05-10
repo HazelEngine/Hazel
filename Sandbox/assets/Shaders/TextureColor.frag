@@ -7,7 +7,7 @@ layout (location = 3) in float v_TilingFactor;
 
 layout (location = 0) out vec4 FragColor;
 
-layout (binding = 1) uniform texture2D u_Texture[32];
+layout (set = 1, binding = 0) uniform texture2D u_Texture[32];
 layout (binding = 2) uniform sampler u_Sampler;
 
 void main()
