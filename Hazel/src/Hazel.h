@@ -16,6 +16,7 @@
 
 #include "Hazel/Renderer/Buffer.h"
 #include "Hazel/Renderer/Texture.h"
+#include "Hazel/Renderer/SubTexture2D.h"
 #include "Hazel/Renderer/Shader.h"
 #include "Hazel/Renderer/ShaderUniform.h"
 #include "Hazel/Renderer/Material.h"

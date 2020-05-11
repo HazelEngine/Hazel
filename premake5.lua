@@ -88,7 +88,8 @@ project "Hazel"
 
 		postbuildcommands
 		{
-			("{COPY} %{cfg.buildtarget.relpath} \"../bin/" .. outputdir .. "/Sandbox/\"")
+			("{COPY} %{cfg.buildtarget.relpath} \"../bin/" .. outputdir .. "/Sandbox/\""),
+			("{COPY} %{cfg.buildtarget.relpath} \"../bin/" .. outputdir .. "/2DScene/\"")
 		}
 
 	filter "configurations:Debug"
@@ -108,6 +109,58 @@ project "Hazel"
 
 project "Sandbox"
 	location "Sandbox"
+	kind "ConsoleApp"
+	language "C++"
+	staticruntime "Off"
+
+	targetdir ("bin/" .. outputdir .. "/%{prj.name}/")
+	objdir ("bin-int/" .. outputdir .. "/%{prj.name}/")
+
+	files
+	{
+		"%{prj.name}/src/**.h",
+		"%{prj.name}/src/**.cpp"
+	}
+
+	includedirs
+	{
+		"%{IncludeDir.spdlog}",
+		"%{IncludeDir.GLM}",
+		"%{IncludeDir.ImGui}",
+		"Hazel/src/"
+	}
+
+	links
+	{
+		"Hazel"
+	}
+
+	filter "system:windows"
+		cppdialect "C++17"
+		systemversion "latest"
+
+		defines
+		{
+			"HZ_PLATFORM_WINDOWS"
+		}
+
+	filter "configurations:Debug"
+		defines "HZ_DEBUG"
+		runtime "Debug"
+		symbols "On"
+
+	filter "configurations:Release"
+		defines "HZ_RELEASE"
+		runtime "Release"
+		optimize "On"
+
+	filter "configurations:Dist"
+		defines "HZ_DIST"
+		runtime "Release"
+		optimize "On"
+
+project "2DScene"
+	location "2DScene"
 	kind "ConsoleApp"
 	language "C++"
 	staticruntime "Off"
