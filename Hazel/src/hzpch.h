@@ -17,6 +17,9 @@
 #include "Hazel/Core/Log.h"
 #include "Hazel/Debug/Instrumentor.h"
 
+#define _USE_MATH_DEFINES
+#include <math.h>
+
 #ifdef HZ_PLATFORM_WINDOWS
 	#include <Windows.h>
 #endif

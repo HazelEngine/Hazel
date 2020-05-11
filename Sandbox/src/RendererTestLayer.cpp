@@ -15,12 +15,14 @@ Ref<IndexBuffer>  g_TriangleIndxBuff;
 Ref<Texture2D>  g_CirclesTex;
 
 RendererTestLayer::RendererTestLayer()
-	: Layer("RendererTestLayer"), m_CameraController(1280.0f / 720.0f, true) {}
+	: Layer("RendererTestLayer"),
+	  m_OrthoCameraController(1280.0f / 720.0f, true),
+	  m_PerspCameraController(45.0f, 1280.0f, 720.0f, 0.1f, 10000.0f) {}
 
 void RendererTestLayer::OnAttach()
 {
 	m_CheckerboardTex = Texture2D::Create("assets/Textures/Checkerboard_SemiTransparent.png");
-	//g_CirclesTex = Texture2D::Create("assets/Textures/Circles.jpg");
+	g_CirclesTex = Texture2D::Create("assets/Textures/Checkerboard_Color.png");
 	m_PikachuTex = Texture2D::Create("assets/Textures/Pikachu.png");
 	m_EeveeTex = Texture2D::Create("assets/Textures/Eevee.png");
 
@@ -38,18 +40,17 @@ void RendererTestLayer::OnAttach()
 	g_Material = Material::Create(m_Shader);
 	glm::vec4 basecolor = { 0.0f, 1.0f, 0.0f, 1.0f };
 	g_Material->Set("Albedo", basecolor);
+	g_Material->Set("u_Texture", g_CirclesTex);
 	g_Material->Bind();
 
 	g_Instance1 = MaterialInstance::Create(g_Material);
 	glm::vec4 color1 = { 1.0f, 0.0f, 0.0f, 1.0f };
 	g_Instance1->Set("Albedo", color1);
-	g_Instance1->Set("u_Texture", m_EeveeTex);
 	g_Instance1->Bind();
 
 	g_Instance2 = MaterialInstance::Create(g_Material);
 	glm::vec4 color2 = { 0.0f, 0.0f, 1.0f, 1.0f };
 	g_Instance2->Set("Albedo", color2);
-	g_Instance2->Set("u_Texture", m_PikachuTex);
 	g_Instance2->Bind();
 
 	// NOTE: Should set layout in pipeline, or should get pipeline from shader binary?
@@ -105,9 +106,9 @@ void RendererTestLayer::OnAttach()
 
 	Vertex triangleVert[3] =
 	{
-		{{ 2.5f, -1.0f, 0.0f }, { 1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }},
-		{{ 4.5f, -1.0f, 0.0f }, { 0.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }},
-		{{ 3.5f,  1.0f, 0.0f }, { 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }}
+		{{ 2.5f, -1.0f, 0.0f }, { 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }},
+		{{ 4.5f, -1.0f, 0.0f }, { 1.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }},
+		{{ 3.5f,  1.0f, 0.0f }, { 0.5f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }}
 	};
 
 	uint32_t triangleIndx[3] = { 0, 1, 2 };
@@ -121,7 +122,8 @@ void RendererTestLayer::OnDetach() {}
 void RendererTestLayer::OnUpdate(Timestep ts)
 {
 	// Update
-	m_CameraController.OnUpdate(ts);
+	m_OrthoCameraController.OnUpdate(ts);
+	m_PerspCameraController.OnUpdate(ts);
 
 	// Reset statistics
 	Renderer2D::ResetStatistics();
@@ -130,7 +132,7 @@ void RendererTestLayer::OnUpdate(Timestep ts)
 	Renderer::Prepare();
 
 	Renderer::BeginRenderPass(m_RenderPass);
-	Renderer2D::BeginScene(m_CameraController.GetCamera());
+	Renderer2D::BeginScene(m_PerspCameraController.GetCamera());
 
 	//for (float y = -1.0f; y < 1.0f; y += 0.1f)
 	//{
@@ -152,7 +154,7 @@ void RendererTestLayer::OnUpdate(Timestep ts)
 
 	Renderer2D::EndScene();
 	
-	glm::mat4 viewProj = m_CameraController.GetCamera().GetViewProjectionMatrix();
+	glm::mat4 viewProj = m_PerspCameraController.GetCamera().GetViewProjectionMatrix();
 	m_Shader->SetUniformBuffer("u_SceneData", &viewProj, sizeof(glm::mat4));
 
 	Renderer::Submit(m_Pipeline, m_VertexBuffer, m_IndexBuffer, g_Material);
@@ -172,5 +174,6 @@ void RendererTestLayer::OnImGuiRender()
 
 void RendererTestLayer::OnEvent(Event& e)
 {
-	m_CameraController.OnEvent(e);
+	m_OrthoCameraController.OnEvent(e);
+	m_PerspCameraController.OnEvent(e);
 }

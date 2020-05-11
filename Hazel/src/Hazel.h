@@ -30,3 +30,5 @@
 
 #include "Hazel/Camera/OrthographicCamera.h"
 #include "Hazel/Camera/OrthographicCameraController.h"
+#include "Hazel/Camera/PerspectiveCamera.h"
+#include "Hazel/Camera/PerspectiveCameraController.h"

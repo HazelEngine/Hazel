@@ -118,7 +118,7 @@ namespace Hazel {
 		delete s_Data;
 	}
 
-	void Renderer2D::BeginScene(const OrthographicCamera& camera)
+	void Renderer2D::BeginScene(const Camera& camera)
 	{
 		HZ_PROFILE_FUNCTION()
 
