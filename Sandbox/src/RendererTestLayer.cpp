@@ -16,8 +16,7 @@ Ref<Texture2D>  g_CirclesTex;
 
 RendererTestLayer::RendererTestLayer()
 	: Layer("RendererTestLayer"),
-	  m_OrthoCameraController(1280.0f / 720.0f, true),
-	  m_PerspCameraController(45.0f, 1280.0f, 720.0f, 0.1f, 10000.0f) {}
+	  m_OrthoCameraController(1280.0f / 720.0f, true) {}
 
 void RendererTestLayer::OnAttach()
 {
@@ -123,7 +122,6 @@ void RendererTestLayer::OnUpdate(Timestep ts)
 {
 	// Update
 	m_OrthoCameraController.OnUpdate(ts);
-	m_PerspCameraController.OnUpdate(ts);
 
 	// Reset statistics
 	Renderer2D::ResetStatistics();
@@ -132,7 +130,7 @@ void RendererTestLayer::OnUpdate(Timestep ts)
 	Renderer::Prepare();
 
 	Renderer::BeginRenderPass(m_RenderPass);
-	Renderer2D::BeginScene(m_PerspCameraController.GetCamera());
+	Renderer2D::BeginScene(m_OrthoCameraController.GetCamera());
 
 	//for (float y = -1.0f; y < 1.0f; y += 0.1f)
 	//{
@@ -154,7 +152,7 @@ void RendererTestLayer::OnUpdate(Timestep ts)
 
 	Renderer2D::EndScene();
 	
-	glm::mat4 viewProj = m_PerspCameraController.GetCamera().GetViewProjectionMatrix();
+	glm::mat4 viewProj = m_OrthoCameraController.GetCamera().GetViewProjectionMatrix();
 	m_Shader->SetUniformBuffer("u_SceneData", &viewProj, sizeof(glm::mat4));
 
 	Renderer::Submit(m_Pipeline, m_VertexBuffer, m_IndexBuffer, g_Material);
@@ -175,5 +173,4 @@ void RendererTestLayer::OnImGuiRender()
 void RendererTestLayer::OnEvent(Event& e)
 {
 	m_OrthoCameraController.OnEvent(e);
-	m_PerspCameraController.OnEvent(e);
 }

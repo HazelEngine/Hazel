@@ -146,6 +146,7 @@ namespace Hazel {
 		bool GetFlag(MaterialFlag flag) const { return (uint32_t)flag & m_Material->m_Flags; }
 		void SetFlag(MaterialFlag flag, bool value = true);
 
+		Ref<Material> GetMaterial() { return m_Material; }
 		Ref<Shader> GetShader() { return m_Material->m_Shader; }
 		const std::vector<Ref<Texture>>& GetTextures() const { return m_TexturesVector; }
 
