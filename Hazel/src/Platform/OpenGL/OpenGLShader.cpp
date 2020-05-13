@@ -61,8 +61,8 @@ namespace Hazel {
 
 		Compile(shaderSrcs);
 
-		GetShaderResources(info.VertexShaderSource);
-		GetShaderResources(info.FragmentShaderSource);
+		GetShaderResources(info.VertexShaderSource, ShaderDomain::Vertex);
+		GetShaderResources(info.FragmentShaderSource, ShaderDomain::Pixel);
 
 		GenerateShaderResources();
 	}
@@ -153,11 +153,11 @@ namespace Hazel {
 
 	void OpenGLShader::BindTexture(const std::string& name, uint32_t index, const Ref<Texture>& texture)
 	{
-		for (ShaderResource resource : m_ShaderResources)
+		for (auto resource : m_Resources)
 		{
-			if (resource.Name == name)
+			if (resource->GetName() == name)
 			{
-				if (index > resource.ArraySize)
+				if (index > resource->GetCount())
 				{
 					HZ_CORE_ERROR("Has no slot {0} in the texture {1}.", index, name)
 					return;
@@ -181,6 +181,19 @@ namespace Hazel {
 
 	void OpenGLShader::BindTextureToPool(const std::string& name, const Ref<Texture>& texture)
 	{
+		for (auto resource : m_Resources)
+		{
+			if (resource->GetName() == name)
+			{
+				// Set the Sampler name
+				OpenGLTexture2D* gl_Texture = static_cast<OpenGLTexture2D*>(texture.get());
+				gl_Texture->SetSamplerName(name);
+
+				return;
+			}
+		}
+
+		HZ_CORE_ERROR("Has no {0} texture in the shader {1}", name, m_Name)
 	}
 
 	Ref<Texture> OpenGLShader::GetTexture(const std::string& name) const
@@ -198,23 +211,43 @@ namespace Hazel {
 		return textures[index];
 	}
 
-	std::vector<Ref<Texture>> OpenGLShader::GetTextures() const
+	std::vector<Ref<Texture>> OpenGLShader::GetTexturesVector() const
 	{
 		std::vector<Ref<Texture>> textures;
-
-		// TODO: Inefficient, should be called just only when textures change
-		// Loop through all the texture arrays and copy the texture refs in the arrays
 		for (auto it = m_Textures.begin(); it != m_Textures.end(); it++)
 		{
 			auto& textureArray = it->second;
 			textures.insert(textures.end(), textureArray.begin(), textureArray.end());
 		}
+		return textures;
+	}
 
+	std::unordered_map<std::string, Ref<Texture>> OpenGLShader::GetTextures() const
+	{
+		std::unordered_map<std::string, Ref<Texture>> textures;
+		for (auto it = m_Textures.begin(); it != m_Textures.end(); it++)
+		{
+			textures[it->first] = it->second[0];
+		}
 		return textures;
 	}
 
 	void OpenGLShader::SetMaterialUniformBuffer(Buffer buffer, uint32_t materialIndex)
 	{
+		if (HasVSMaterialUniformBuffer() || HasPSMaterialUniformBuffer())
+		{
+			auto gl_Buffer = dynamic_cast<OpenGLUniformBuffer*>(m_MaterialUniformBuffer.get());
+			auto offset = materialIndex * m_MaterialUniformBufferAlignment;
+
+			HZ_CORE_ASSERT(offset + buffer.Size <= gl_Buffer->GetSize(), "Material Uniform Buffer overflow!")
+
+			byte* mapped = (byte*)m_MaterialUniformBuffer->Map();
+			memcpy(mapped + offset, buffer.Data, buffer.Size);
+			m_MaterialUniformBuffer->Unmap(offset, buffer.Size);
+			return;
+		}
+
+		HZ_CORE_ERROR("Shader has no material uniform buffer!")
 	}
 
 	std::vector<Ref<UniformBuffer>> OpenGLShader::GetUniformBuffers() const
@@ -422,69 +455,117 @@ namespace Hazel {
 		}
 	}
 
-	void OpenGLShader::GetShaderResources(const std::vector<uint32_t>& spirv)
+	void OpenGLShader::GetShaderResources(const std::vector<uint32_t>& spirv, ShaderDomain domain)
 	{
 		spirv_cross::Compiler compiler(spirv);
 		spirv_cross::ShaderResources resources = compiler.get_shader_resources();
 
+		// samplerCube, sampler2D
 		for (const auto& image : resources.sampled_images)
 		{
 			unsigned binding = compiler.get_decoration(image.id, spv::DecorationBinding);
 
-			// Has at least 1 image in the array
-			uint32_t arraySize = 1;
+			// Has at least 1 texture
+			uint32_t count = 1;
 
 			// Check if is an array and his size
-			const auto& type = compiler.get_type(image.type_id);
-			if (type.array.size() > 0)
+			const auto& spvType = compiler.get_type(image.type_id);
+			if (spvType.array.size() > 0)
 			{
-				arraySize = 0;
-				
-				for (uint32_t i = 0; i < type.array.size(); i++)
+				count = 0;
+
+				for (uint32_t i = 0; i < spvType.array.size(); i++)
 				{
-					arraySize += type.array[i];
+					count += spvType.array[i];
 				}
 			}
 
-			m_ShaderResources.push_back({
-				binding,
-				image.name,
-				0,
-				arraySize,
-				false,
-				true
-			});
+			// Type here is SampledImage
+			auto type = OpenGLShaderResourceDeclaration::Type::SampledImage;
+
+			// Try to get the dimension of this texture
+			auto dimension = OpenGLShaderResourceDeclaration::Dimension::None;
+			const auto& spvBaseType = compiler.get_type(image.base_type_id);
+			switch (spvBaseType.image.dim)
+			{
+			case spv::Dim2D:	dimension = OpenGLShaderResourceDeclaration::Dimension::Texture2D;   break;
+			case spv::DimCube:	dimension = OpenGLShaderResourceDeclaration::Dimension::TextureCube; break;
+			}
+
+			// Create the Resource Declaration
+			auto resourceDecl = new OpenGLShaderResourceDeclaration(image.name, binding, domain, type, dimension, count);
+			m_Resources.push_back(resourceDecl);
 		}
 
+		// texture2D
 		for (const auto& image : resources.separate_images)
 		{
 			unsigned binding = compiler.get_decoration(image.id, spv::DecorationBinding);
 
-			// Has at least 1 image in the array
-			uint32_t arraySize = 1;
+			// Has at least 1 resource
+			uint32_t count = 1;
 
 			// Check if is an array and his size
-			const auto& type = compiler.get_type(image.type_id);
-			if (type.array.size() > 0)
+			const auto& spvType = compiler.get_type(image.type_id);
+			if (spvType.array.size() > 0)
 			{
-				arraySize = 0;
-				
-				for (uint32_t i = 0; i < type.array.size(); i++)
+				count = 0;
+
+				for (uint32_t i = 0; i < spvType.array.size(); i++)
 				{
-					arraySize += type.array[i];
+					count += spvType.array[i];
 				}
 			}
 
-			m_ShaderResources.push_back({
-				binding,
-				image.name,
-				0,
-				arraySize,
-				false,
-				true
-			});
+			// Type here is Image
+			auto type = OpenGLShaderResourceDeclaration::Type::Image;
+
+			// Try to get the dimension of this texture
+			auto dimension = OpenGLShaderResourceDeclaration::Dimension::None;
+			const auto& spvBaseType = compiler.get_type(image.base_type_id);
+			switch (spvBaseType.image.dim)
+			{
+			case spv::Dim2D:	dimension = OpenGLShaderResourceDeclaration::Dimension::Texture2D;   break;
+			case spv::DimCube:	dimension = OpenGLShaderResourceDeclaration::Dimension::TextureCube; break;
+			}
+
+			// Create the Resource Declaration
+			auto resourceDecl = new OpenGLShaderResourceDeclaration(image.name, binding, domain, type, dimension, count);
+			m_Resources.push_back(resourceDecl);
 		}
 
+		// sampler
+		for (const auto& sampler : resources.separate_samplers)
+		{
+			unsigned binding = compiler.get_decoration(sampler.id, spv::DecorationBinding);
+
+			// Has at least 1 resource
+			uint32_t count = 1;
+
+			// Check if is an array and his size
+			const auto& spvType = compiler.get_type(sampler.type_id);
+			if (spvType.array.size() > 0)
+			{
+				count = 0;
+
+				for (uint32_t i = 0; i < spvType.array.size(); i++)
+				{
+					count += spvType.array[i];
+				}
+			}
+
+			// Type here is Sampler
+			auto type = OpenGLShaderResourceDeclaration::Type::Sampler;
+
+			// Sampler has no dimension
+			auto dimension = OpenGLShaderResourceDeclaration::Dimension::None;
+
+			// Create the Resource Declaration
+			auto resourceDecl = new OpenGLShaderResourceDeclaration(sampler.name, binding, domain, type, dimension, count);
+			m_Resources.push_back(resourceDecl);
+		}
+
+		// uniform buffer
 		for (const auto& ubuffer : resources.uniform_buffers)
 		{
 			unsigned binding = compiler.get_decoration(ubuffer.id, spv::DecorationBinding);
@@ -492,67 +573,169 @@ namespace Hazel {
 			// Uses the name queried using the id, as it returns the variable name rather than block name
 			auto name = compiler.get_name(ubuffer.id);
 
-			const auto& baseType = compiler.get_type(ubuffer.base_type_id);
-			size_t bytes = compiler.get_declared_struct_size(baseType);
-
-			// Has at least 1 buffer in the array
-			uint32_t arraySize = 1;
+			// Has at least 1 uniform
+			uint32_t count = 1;
 
 			// Check if is an array and his size
-			const auto& type = compiler.get_type(ubuffer.type_id);
-			if (type.array.size() > 0)
+			const auto& spvType = compiler.get_type(ubuffer.type_id);
+			if (spvType.array.size() > 0)
 			{
-				arraySize = 0;
-				
-				for (uint32_t i = 0; i < type.array.size(); i++)
+				count = 0;
+
+				for (uint32_t i = 0; i < spvType.array.size(); i++)
 				{
-					arraySize += type.array[i];
+					count += spvType.array[i];
 				}
 			}
 
-			m_ShaderResources.push_back({
-				binding,
-				name,
-				static_cast<uint32_t>(bytes),
-				arraySize,
-				true,
-				false
-			});
+			// Create the Uniform Buffer Declaration
+			auto bufferDecl = CreateScope<OpenGLShaderUniformBufferDeclaration>(name, binding, domain);
+
+			// Loop through all members of the uniform buffer, and create a Uniform Declaration for each them
+			uint32_t index = 0;
+			const auto& spvBaseType = compiler.get_type(ubuffer.base_type_id);
+			for (auto typeId : spvBaseType.member_types)
+			{
+				auto memberType = compiler.get_type(typeId);
+				auto memberName = compiler.get_member_name(spvBaseType.self, index);
+
+				// Get type
+				auto type = OpenGLShaderUniformDeclaration::Type::None;
+				switch (memberType.basetype)
+				{
+				case spirv_cross::SPIRType::Int:
+					type = OpenGLShaderUniformDeclaration::Type::Int32;
+					break;
+
+				case spirv_cross::SPIRType::Float:
+					if (memberType.vecsize == 1)
+						type = OpenGLShaderUniformDeclaration::Type::Float32;
+					else if (memberType.vecsize == 2)
+						type = OpenGLShaderUniformDeclaration::Type::Vec2;
+					else if (memberType.vecsize == 3)
+						type = OpenGLShaderUniformDeclaration::Type::Vec3;
+					else if (memberType.vecsize == 2)
+						type = OpenGLShaderUniformDeclaration::Type::Vec2;
+					else if (memberType.vecsize == 4 && memberType.columns == 1)
+						type = OpenGLShaderUniformDeclaration::Type::Vec4;
+					else if (memberType.vecsize == 4 && memberType.columns == 3)
+						type = OpenGLShaderUniformDeclaration::Type::Mat3;
+					else if (memberType.vecsize == 4 && memberType.columns == 4)
+						type = OpenGLShaderUniformDeclaration::Type::Mat4;
+					break;
+				}
+
+				auto uniform = new OpenGLShaderUniformDeclaration(memberName, domain, type, count);
+				bufferDecl->PushUniform(uniform);
+
+				index++;
+			}
+
+			// TODO: Define this string as static
+			if (ubuffer.name == "MaterialData")
+			{
+				switch (domain)
+				{
+				case Hazel::ShaderDomain::Vertex:
+					m_VSMaterialUniformBuffer = std::move(bufferDecl);
+					break;
+
+				case Hazel::ShaderDomain::Pixel:
+					m_PSMaterialUniformBuffer = std::move(bufferDecl);
+					break;
+				}
+			}
+			else
+			{
+				auto decl = bufferDecl.release();
+				switch (domain)
+				{
+					case Hazel::ShaderDomain::Vertex: m_VSUniformBuffers.push_back(decl); break;
+					case Hazel::ShaderDomain::Pixel:  m_PSUniformBuffers.push_back(decl); break;
+				}
+			}
 		}
 	}
 
 	void OpenGLShader::GenerateShaderResources()
 	{
-		for (ShaderResource resource : m_ShaderResources)
+		// VS Uniform Buffers
+		for (auto decl : m_VSUniformBuffers)
 		{
-			if (resource.IsBuffer)
-			{
-				Ref<UniformBuffer> ubuffer =  UniformBuffer::Create(resource.Size);
-				
-				// Set the binding, needed for OpenGL rendering
-				OpenGLUniformBuffer* gl_UBuffer = static_cast<OpenGLUniformBuffer*>(ubuffer.get());
-				gl_UBuffer->SetBinding(resource.Binding);
+			auto ubuffer = UniformBuffer::Create(decl->GetSize());
 
-				m_UniformBuffers[resource.Name] = ubuffer;
-			}
-			else if (resource.IsImage)
+			// Set the binding, needed for OpenGL rendering
+			auto gl_UBuffer = static_cast<OpenGLUniformBuffer*>(ubuffer.get());
+			gl_UBuffer->SetBinding(decl->GetBinding());
+
+			m_UniformBuffers[decl->GetName()] = ubuffer;
+		}
+
+		// PS Uniform Buffers
+		for (auto decl : m_PSUniformBuffers)
+		{
+			auto ubuffer = UniformBuffer::Create(decl->GetSize());
+
+			// Set the binding, needed for OpenGL rendering
+			auto gl_UBuffer = static_cast<OpenGLUniformBuffer*>(ubuffer.get());
+			gl_UBuffer->SetBinding(decl->GetBinding());
+
+			m_UniformBuffers[decl->GetName()] = ubuffer;
+		}
+
+		// Material Uniform Buffer
+		if (HasVSMaterialUniformBuffer() || HasPSMaterialUniformBuffer())
+		{
+			ShaderUniformBufferDeclaration* ubuffer;
+			if (HasVSMaterialUniformBuffer())
+				ubuffer = m_VSMaterialUniformBuffer.get();
+			else
+				ubuffer = m_PSMaterialUniformBuffer.get();
+
+			int32_t minUniformBufferAlignment = 0;
+			glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &minUniformBufferAlignment);
+
+			m_MaterialUniformBufferAlignment = ubuffer->GetSize();
+			if (minUniformBufferAlignment > 0)
 			{
-				// TODO: Set the default magenta texture
+				m_MaterialUniformBufferAlignment =
+					(m_MaterialUniformBufferAlignment + minUniformBufferAlignment - 1) &
+					~(minUniformBufferAlignment - 1);
+			}
+
+			m_MaterialUniformBuffer = CreateScope<OpenGLUniformBuffer>(m_MaterialUniformBufferAlignment * MAX_MAT_INSTANCES);
+
+			// Set the binding, needed for OpenGL rendering
+			auto gl_UBuffer = dynamic_cast<OpenGLUniformBuffer*>(m_MaterialUniformBuffer.get());
+			gl_UBuffer->SetBinding(ubuffer->GetBinding());
+		}
+
+		// Textures
+		for (auto resource : m_Resources)
+		{
+			auto vk_Resource = dynamic_cast<OpenGLShaderResourceDeclaration*>(resource);
+			
+			// Only process Images and SampledImages
+			if (vk_Resource->GetType() == OpenGLShaderResourceDeclaration::Type::Image ||
+				vk_Resource->GetType() == OpenGLShaderResourceDeclaration::Type::SampledImage)
+			{
+				// TODO: Set the default magenta texture /////////////////////////////
 				uint32_t content = 0xFFFF00FF;
 				Ref<Texture2D> defaultTex = Texture2D::Create(&content, 1, 1, 4);
-				
-				std::vector<Ref<Texture>> textures(resource.ArraySize);
+				//////////////////////////////////////////////////////////////////////
 
-				for (uint32_t i = 0; i < resource.ArraySize; i++)
+				std::vector<Ref<Texture>> textures(resource->GetCount());
+				
+				for (uint32_t i = 0; i < resource->GetCount(); i++)
 				{
-					textures[i] = defaultTex;
+					textures[i] = (const Ref<Texture>&)defaultTex;
 
 					// Set the sampler name, so the sampler int will be set correctly
 					OpenGLTexture2D* gl_Texture = static_cast<OpenGLTexture2D*>(textures[i].get());
-					gl_Texture->SetSamplerName(resource.Name + "[" + std::to_string(i) + "]");
+					gl_Texture->SetSamplerName(resource->GetName() + "[" + std::to_string(i) + "]");
 				}
 
-				m_Textures[resource.Name] = textures;
+				m_Textures[resource->GetName()] = textures;
 			}
 		}
 	}

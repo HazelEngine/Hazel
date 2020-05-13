@@ -164,12 +164,15 @@ namespace Hazel {
 			if (vk_Shader->GetGlobalDescriptorSet())
 			{
 				auto materialTextures = material->GetTextures();
+				uint32_t index = 0;
 
 				// If has textures set, bind it, otherwise, bind the default shader texture
 				auto textureSet = vk_Shader->GetTextureDescriptorSet();
-				if (materialTextures.size() > 0)
+				for (auto it = materialTextures.begin(); it != materialTextures.end(); it++)
 				{
-					textureSet = vk_Shader->GetTexturePoolDescriptorSet(materialTextures[0]);
+					if (index > 0) return;
+					textureSet = vk_Shader->GetTexturePoolDescriptorSet(it->second);
+					index++;
 				}
 
 				std::vector<VkDescriptorSet> sets = {
@@ -245,17 +248,28 @@ namespace Hazel {
 			{
 				auto instanceTextures = materialInstance->GetTextures();
 				auto materialTextures = materialInstance->GetMaterial()->GetTextures();
+				uint32_t index = 0;
 
 				// If has textures set, bind it, if not, verify if the base material has set 
 				// the textures, if so bind them, otherwise, bind the default shader texture
 				auto textureSet = vk_Shader->GetTextureDescriptorSet();
 				if (instanceTextures.size() > 0)
 				{
-					textureSet = vk_Shader->GetTexturePoolDescriptorSet(instanceTextures[0]);
+					for (auto it = instanceTextures.begin(); it != instanceTextures.end(); it++)
+					{
+						if (index > 0) return;
+						textureSet = vk_Shader->GetTexturePoolDescriptorSet(it->second);
+						index++;
+					}
 				}
 				else if (materialTextures.size() > 0)
 				{
-					textureSet = vk_Shader->GetTexturePoolDescriptorSet(materialTextures[0]);
+					for (auto it = materialTextures.begin(); it != materialTextures.end(); it++)
+					{
+						if (index > 0) return;
+						textureSet = vk_Shader->GetTexturePoolDescriptorSet(it->second);
+						index++;
+					}
 				}
 
 				std::vector<VkDescriptorSet> sets = {

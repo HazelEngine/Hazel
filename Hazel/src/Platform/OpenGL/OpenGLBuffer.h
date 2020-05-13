@@ -62,11 +62,14 @@ namespace Hazel {
 
 		virtual void* Map() override { return m_LocalBuffer; }
 		virtual void Unmap(uint32_t size) override;
+		virtual void Unmap(uint32_t offset, uint32_t size) override;
 
 		uint32_t GetRendererId() const { return m_RendererId; }
 		
 		uint32_t GetBinding() const { return m_Binding; }
 		void SetBinding(uint32_t binding) { m_Binding = binding; }
+
+		uint32_t GetSize() const { return m_Size; }
 
 	private:
 		uint32_t m_RendererId;

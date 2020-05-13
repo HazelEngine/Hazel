@@ -313,6 +313,11 @@ namespace Hazel {
 
 	void VulkanUniformBuffer::Unmap(uint32_t size)
 	{
+		Unmap(0, size);
+	}
+
+	void VulkanUniformBuffer::Unmap(uint32_t offset, uint32_t size)
+	{
 		VulkanContext* vk_Context = dynamic_cast<VulkanContext*>(Renderer::GetContext());
 		auto& vk_Device = vk_Context->GetDevice();
 

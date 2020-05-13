@@ -146,7 +146,7 @@ namespace Hazel {
 				m_Textures[name] = textures;
 
 				// Update Descriptor Set with the texture data
-				UpdateDescriptorSet((VulkanShaderResourceDeclaration*)resource, m_TextureDescriptorSet);
+				UpdateDescriptorSet((VulkanShaderResourceDeclaration*)resource, textures, m_TextureDescriptorSet);
 				
 				return;
 			}
@@ -163,11 +163,6 @@ namespace Hazel {
 		{
 			if (resource->GetName() == name)
 			{
-				// Get the textures, update the texture in the index, and set textures back
-				auto& textures = m_Textures[name];
-				textures[0] = texture;
-				m_Textures[name] = textures;
-
 				// Try to find the descritor, if not created yet, create and save it
 				auto set = GetTexturePoolDescriptorSet(texture);
 				if (set == VK_NULL_HANDLE)
@@ -177,7 +172,7 @@ namespace Hazel {
 				}
 
 				// Update Descriptor Set with the texture data
-				UpdateDescriptorSet((VulkanShaderResourceDeclaration*)resource, set);
+				UpdateDescriptorSet((VulkanShaderResourceDeclaration*)resource, { texture }, set);
 				
 				return;
 			}
@@ -203,15 +198,20 @@ namespace Hazel {
 
 	void VulkanShader::SetMaterialUniformBuffer(Buffer buffer, uint32_t materialIndex)
 	{
-		auto vk_Buffer = dynamic_cast<VulkanUniformBuffer*>(m_MaterialUniformBuffer.get());
-		auto offset = materialIndex * m_MaterialUniformBufferAlignment;
-		
-		HZ_CORE_ASSERT(offset + buffer.Size <= vk_Buffer->GetSize(), "Material Uniform Buffer overflow!")
+		if (HasVSMaterialUniformBuffer() || HasPSMaterialUniformBuffer())
+		{
+			auto vk_Buffer = dynamic_cast<VulkanUniformBuffer*>(m_MaterialUniformBuffer.get());
+			auto offset = materialIndex * m_MaterialUniformBufferAlignment;
 
-		byte* mapped = (byte*)m_MaterialUniformBuffer->Map();
-		memcpy(mapped + offset, buffer.Data, buffer.Size);
-		m_MaterialUniformBuffer->Unmap(buffer.Size);
-		return;
+			HZ_CORE_ASSERT(offset + buffer.Size <= vk_Buffer->GetSize(), "Material Uniform Buffer overflow!")
+
+			byte* mapped = (byte*)m_MaterialUniformBuffer->Map();
+			memcpy(mapped + offset, buffer.Data, buffer.Size);
+			m_MaterialUniformBuffer->Unmap(buffer.Size);
+			return;
+		}
+
+		HZ_CORE_ERROR("Shader has no material uniform buffer!")
 	}
 
 	void VulkanShader::CreateSamplers()
@@ -452,7 +452,7 @@ namespace Hazel {
 		// Create and save the descriptor in the pool
 		VkDescriptorSetAllocateInfo allocInfo = {};
 		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-		allocInfo.pSetLayouts = &m_TextureDescriptorSetLayout; // TODO: Should use the layout required by the resource
+		allocInfo.pSetLayouts = &m_TextureDescriptorSetLayout;
 		allocInfo.descriptorSetCount = 1;
 		allocInfo.descriptorPool = vk_Context->GetDescriptorPool();
 
@@ -468,16 +468,13 @@ namespace Hazel {
 		return set;
 	}
 
-	void VulkanShader::UpdateDescriptorSet(VulkanShaderResourceDeclaration* resource, VkDescriptorSet set)
+	void VulkanShader::UpdateDescriptorSet(VulkanShaderResourceDeclaration* resource, const std::vector<Ref<Texture>>& textures, VkDescriptorSet set)
 	{
 		// Sampler Descriptors doesn't need to be updated
 		if (resource->GetType() != VulkanShaderResourceDeclaration::Type::Sampler)
 		{
 			VulkanContext* vk_Context = dynamic_cast<VulkanContext*>(Renderer::GetContext());
 			auto& vk_Device = vk_Context->GetDevice();
-
-			// Get all textures in the array
-			auto& textures = m_Textures[resource->GetName()];
 				
 			// Loop through them, to get descriptor infos
 			std::vector<VkDescriptorImageInfo> imageInfos(resource->GetCount());
@@ -863,7 +860,6 @@ namespace Hazel {
 
 			// TODO: Should not be VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
 			m_MaterialUniformBuffer = CreateScope<VulkanUniformBuffer>(m_MaterialUniformBufferAlignment * MAX_MAT_INSTANCES);
-			std::cout << std::endl;
 		}
 
 		// Textures

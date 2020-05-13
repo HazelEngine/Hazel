@@ -5,24 +5,14 @@
 
 #include <Platform/OpenGL/OpenGLShaderUniform.h>
 
+#define MAX_MAT_INSTANCES 20
+
 typedef unsigned int GLenum;
 
 namespace Hazel {
 
 	class OpenGLShader : public Shader
 	{
-	public:
-		struct ShaderResource
-		{
-			uint32_t Binding;
-			std::string Name;
-			uint32_t Size;
-			uint32_t ArraySize;
-
-			bool IsBuffer = false;
-			bool IsImage = false;
-		};
-
 	public:
 		OpenGLShader(const ShaderCreateInfo& info);
 		virtual ~OpenGLShader();
@@ -62,6 +52,9 @@ namespace Hazel {
 		virtual const ShaderUniformBufferDeclaration& GetPSMaterialUniformBuffer() const override { return *m_PSMaterialUniformBuffer; }
 		virtual void SetMaterialUniformBuffer(Buffer buffer, uint32_t materialIndex) override;
 		
+		UniformBuffer* GetMaterialUniformBuffer() const { return m_MaterialUniformBuffer.get(); }
+		uint32_t GetMaterialUniformBufferAlignment() const { return m_MaterialUniformBufferAlignment; }
+
 		virtual uint32_t GetMaterialCount() const override { return m_MaterialCount; }
 		virtual void SetMaterialCount(uint32_t count) override { m_MaterialCount = count; }
 
@@ -69,7 +62,11 @@ namespace Hazel {
 
 		uint32_t GetRendererId() const { return m_RendererId; }
 
-		std::vector<Ref<Texture>> GetTextures() const;
+		// TODO: Temporary, it will be removed when GetTextures() returns all textures in the arrays
+		std::vector<Ref<Texture>> GetTexturesVector() const;
+
+		// TODO: Temporary, this should return the textures map as it are
+		std::unordered_map<std::string, Ref<Texture>> GetTextures() const;
 		std::vector<Ref<UniformBuffer>> GetUniformBuffers() const;
 
 		void UploadUniformInt(const std::string& name, int value) const;
@@ -88,7 +85,7 @@ namespace Hazel {
 		std::unordered_map<GLenum, std::string> PreProcess(const std::string& source);
 		void Compile(const std::unordered_map<GLenum, std::string>& shaderSrcs);
 
-		void GetShaderResources(const std::vector<uint32_t>& spirv);
+		void GetShaderResources(const std::vector<uint32_t>& spirv, ShaderDomain domain);
 		void GenerateShaderResources();
 
 	private:
@@ -103,9 +100,11 @@ namespace Hazel {
 		// Specific material resource declarations
 		Scope<OpenGLShaderUniformBufferDeclaration> m_VSMaterialUniformBuffer;
 		Scope<OpenGLShaderUniformBufferDeclaration> m_PSMaterialUniformBuffer;
+		Scope<UniformBuffer> m_MaterialUniformBuffer;
+		uint32_t m_MaterialUniformBufferAlignment;
 		uint32_t m_MaterialCount;
 
-		std::vector<ShaderResource> m_ShaderResources;
+		// Shader resources
 		std::unordered_map<std::string, Ref<UniformBuffer>> m_UniformBuffers;
 		std::unordered_map<std::string, std::vector<Ref<Texture>>> m_Textures;
 	};

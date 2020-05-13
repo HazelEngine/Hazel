@@ -141,6 +141,7 @@ namespace Hazel {
 
 		virtual void* Map() = 0;
 		virtual void Unmap(uint32_t size) = 0;
+		virtual void Unmap(uint32_t offset, uint32_t size) = 0;
 
 		static Ref<UniformBuffer> Create(uint32_t size);
 		static Ref<UniformBuffer> Create(void* data, uint32_t size);

@@ -50,6 +50,7 @@ void RendererTestLayer::OnAttach()
 	g_Instance2 = MaterialInstance::Create(g_Material);
 	glm::vec4 color2 = { 0.0f, 0.0f, 1.0f, 1.0f };
 	g_Instance2->Set("Albedo", color2);
+	g_Instance2->Set("u_Texture", m_CheckerboardTex);
 	g_Instance2->Bind();
 
 	// NOTE: Should set layout in pipeline, or should get pipeline from shader binary?

@@ -53,7 +53,6 @@ namespace Hazel {
 		{
 			auto resource = FindResourceDeclaration(name);
 			m_Textures[resource->GetName()] = texture;
-			m_TexturesVector.push_back(texture);
 		}
 
 		void Set(const std::string& name, const Ref<Texture2D>& texture)
@@ -69,7 +68,7 @@ namespace Hazel {
 		uint32_t GetFlags() const { return m_Flags; }
 		void SetFlag(MaterialFlag flag) { m_Flags |= (uint32_t)flag; }
 
-		const std::vector<Ref<Texture>>& GetTextures() const { return m_TexturesVector; }
+		const std::unordered_map<std::string, Ref<Texture>>& GetTextures() const { return m_Textures; }
 
 		uint32_t GetUniformBufferIndex() const { return m_MaterialUniformBufferIndex; }
 
@@ -91,7 +90,6 @@ namespace Hazel {
 		Buffer m_VSUniformStorageBuffer;
 		Buffer m_PSUniformStorageBuffer;
 		std::unordered_map<std::string, Ref<Texture>> m_Textures;
-		std::vector<Ref<Texture>> m_TexturesVector;
 
 		// Index of the material data in the shader uniform buffer
 		uint32_t m_MaterialUniformBufferIndex;
@@ -129,7 +127,6 @@ namespace Hazel {
 		{
 			auto resource = m_Material->FindResourceDeclaration(name);
 			m_Textures[resource->GetName()] = texture;
-			m_TexturesVector.push_back(texture);
 		}
 
 		void Set(const std::string& name, const Ref<Texture2D>& texture)
@@ -148,7 +145,7 @@ namespace Hazel {
 
 		Ref<Material> GetMaterial() { return m_Material; }
 		Ref<Shader> GetShader() { return m_Material->m_Shader; }
-		const std::vector<Ref<Texture>>& GetTextures() const { return m_TexturesVector; }
+		const std::unordered_map<std::string, Ref<Texture>>& GetTextures() const { return m_Textures; }
 
 		uint32_t GetUniformBufferIndex() const { return m_MaterialUniformBufferIndex; }
 
@@ -168,7 +165,6 @@ namespace Hazel {
 		Buffer m_VSUniformStorageBuffer;
 		Buffer m_PSUniformStorageBuffer;
 		std::unordered_map<std::string, Ref<Texture>> m_Textures;
-		std::vector<Ref<Texture>> m_TexturesVector;
 
 		// Index of the instance data in the shader uniform buffer
 		uint32_t m_MaterialUniformBufferIndex;

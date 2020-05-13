@@ -16,5 +16,5 @@ layout (binding = 3) uniform MaterialData
 void main()
 {
     FragColor = texture(sampler2D(u_Texture, u_Sampler), v_TexCoord);
-    FragColor * v_Color;
+    FragColor *= v_Color;
 }

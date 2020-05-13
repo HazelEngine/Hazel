@@ -77,7 +77,7 @@ namespace Hazel {
 		const VkDescriptorSet& CreateDescriptorSetForTexture(const Ref<Texture>& texture);
 
 		// TODO: Remove set, and set set inside resource
-		void UpdateDescriptorSet(VulkanShaderResourceDeclaration* resource, VkDescriptorSet set);
+		void UpdateDescriptorSet(VulkanShaderResourceDeclaration* resource, const std::vector<Ref<Texture>>& textures, VkDescriptorSet set);
 		void UpdateDescriptorSet(VulkanShaderUniformBufferDeclaration* ubuffer);
 		void UpdateDescriptorSets();
 

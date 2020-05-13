@@ -135,9 +135,14 @@ namespace Hazel {
 
 	void OpenGLUniformBuffer::Unmap(uint32_t size)
 	{
+		Unmap(0, size);
+	}
+
+	void OpenGLUniformBuffer::Unmap(uint32_t offset, uint32_t size)
+	{
 		HZ_PROFILE_FUNCTION()
 		glBindBuffer(GL_UNIFORM_BUFFER, m_RendererId);
-		glBufferSubData(GL_UNIFORM_BUFFER, 0, size, m_LocalBuffer);
+		glBufferSubData(GL_UNIFORM_BUFFER, offset, size, m_LocalBuffer + offset);
 	}
 
 }
