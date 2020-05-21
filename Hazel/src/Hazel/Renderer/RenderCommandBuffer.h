@@ -35,6 +35,13 @@ namespace Hazel {
 			uint32_t indexCount = 0
 		) = 0;
 
+		virtual void SubmitMesh(
+			const Ref<Pipeline>& pipeline,
+			const Ref<Mesh>& mesh,
+			const glm::mat4& transform,
+			const Ref<MaterialInstance>& overrideMaterial
+		) = 0;
+
 		virtual void Flush() = 0;
 		
 		static Ref<RenderCommandBuffer> Create();

@@ -3,25 +3,16 @@
 #include <imgui.h>
 #include <glm/gtc/type_ptr.hpp>
 
-Ref<Material> g_Material;
-Ref<MaterialInstance> g_Instance1;
-Ref<MaterialInstance> g_Instance2;
-
-Ref<VertexBuffer> g_QuadVertBuff;
-Ref<IndexBuffer>  g_QuadIndxBuff;
-Ref<VertexBuffer> g_TriangleVertBuff;
-Ref<IndexBuffer>  g_TriangleIndxBuff;
-
-Ref<Texture2D>  g_CirclesTex;
+Ref<Pipeline> g_MeshPipeline, g_AnimMeshPipeline;
+Ref<Mesh> g_Mesh, g_AnimMesh;
 
 RendererTestLayer::RendererTestLayer()
 	: Layer("RendererTestLayer"),
-	  m_OrthoCameraController(1280.0f / 720.0f, true) {}
+	  m_PerspCameraController(45.0f, 1280.0f, 720.0f, 0.1f, 10000.0f) {}
 
 void RendererTestLayer::OnAttach()
 {
 	m_CheckerboardTex = Texture2D::Create("assets/Textures/Checkerboard_SemiTransparent.png");
-	g_CirclesTex = Texture2D::Create("assets/Textures/Checkerboard_Color.png");
 	m_PikachuTex = Texture2D::Create("assets/Textures/Pikachu.png");
 	m_EeveeTex = Texture2D::Create("assets/Textures/Eevee.png");
 
@@ -36,23 +27,6 @@ void RendererTestLayer::OnAttach()
 
 	m_Shader->BindTexture("u_Texture", m_CheckerboardTex);
 
-	g_Material = Material::Create(m_Shader);
-	glm::vec4 basecolor = { 0.0f, 1.0f, 0.0f, 1.0f };
-	g_Material->Set("Albedo", basecolor);
-	g_Material->Set("u_Texture", g_CirclesTex);
-	g_Material->Bind();
-
-	g_Instance1 = MaterialInstance::Create(g_Material);
-	glm::vec4 color1 = { 1.0f, 0.0f, 0.0f, 1.0f };
-	g_Instance1->Set("Albedo", color1);
-	g_Instance1->Bind();
-
-	g_Instance2 = MaterialInstance::Create(g_Material);
-	glm::vec4 color2 = { 0.0f, 0.0f, 1.0f, 1.0f };
-	g_Instance2->Set("Albedo", color2);
-	g_Instance2->Set("u_Texture", m_CheckerboardTex);
-	g_Instance2->Bind();
-
 	// NOTE: Should set layout in pipeline, or should get pipeline from shader binary?
 	PipelineSpecification pipelineSpec;
 	pipelineSpec.Shader = m_Shader;
@@ -63,6 +37,28 @@ void RendererTestLayer::OnAttach()
 	};
 
 	m_Pipeline = Pipeline::Create(pipelineSpec);
+
+	/////////////////////////////////////////////////////////////////
+
+	//g_Mesh = CreateRef<Mesh>("assets/Models/Cerberus/Cerberus.gltf");
+	//g_Mesh = CreateRef<Mesh>("assets/Models/StingrayPBS1/StingrayPBS1.gltf");
+	//g_Mesh = CreateRef<Mesh>("assets/Models/SciFi_Wall/SciFi_Wall.gltf");
+	g_Mesh = CreateRef<Mesh>("assets/Models/WoodBarrel/WoodBarrel.gltf");
+	g_AnimMesh = CreateRef<Mesh>("assets/Models/M1911/M1911.gltf");
+
+	PipelineSpecification meshPipelineSpec;
+	meshPipelineSpec.Shader = g_Mesh->GetMeshShader();
+	meshPipelineSpec.VertexBufferLayout = g_Mesh->GetVertexBuffer()->GetLayout();
+
+	g_MeshPipeline = Pipeline::Create(meshPipelineSpec);
+
+	PipelineSpecification animMeshPipelineSpec;
+	animMeshPipelineSpec.Shader = g_AnimMesh->GetMeshShader();
+	animMeshPipelineSpec.VertexBufferLayout = g_AnimMesh->GetVertexBuffer()->GetLayout();
+
+	g_AnimMeshPipeline = Pipeline::Create(animMeshPipelineSpec);
+
+	///////////////////////////////////////////////////////////////////
 
 	struct Vertex
 	{
@@ -82,7 +78,7 @@ void RendererTestLayer::OnAttach()
 	uint32_t indices[6] = { 0, 1, 2, 2, 3, 0 };
 
 	m_VertexBuffer = VertexBuffer::Create(vertices, sizeof(vertices));
-	m_IndexBuffer = IndexBuffer::Create(indices, 6);
+	m_IndexBuffer = IndexBuffer::Create(indices, _countof(indices) * sizeof(uint32_t));
 
 	FramebufferSpecification framebufferSpec;
 	framebufferSpec.ClearColor = { 0.1f, 0.1f, 0.1f, 1.0f };
@@ -90,31 +86,6 @@ void RendererTestLayer::OnAttach()
 	RenderPassSpecification renderPassSpec;
 	renderPassSpec.TargetFramebuffer = Framebuffer::Create(framebufferSpec);
 	m_RenderPass = RenderPass::Create(renderPassSpec);
-
-	//////////////////////////////////////////////////////////////////////////////////////
-
-	Vertex quadVert[4] =
-	{
-		{{ -2.5f,  1.0f, 0.0f }, { 1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }},
-		{{ -3.5f,  1.0f, 0.0f }, { 0.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }},
-		{{ -3.5f, -1.0f, 0.0f }, { 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }},
-		{{ -2.5f, -1.0f, 0.0f }, { 1.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }}
-	};
-
-	g_QuadVertBuff = VertexBuffer::Create(quadVert, sizeof(quadVert));
-	g_QuadIndxBuff = IndexBuffer::Create(indices, 6);
-
-	Vertex triangleVert[3] =
-	{
-		{{ 2.5f, -1.0f, 0.0f }, { 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }},
-		{{ 4.5f, -1.0f, 0.0f }, { 1.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }},
-		{{ 3.5f,  1.0f, 0.0f }, { 0.5f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }}
-	};
-
-	uint32_t triangleIndx[3] = { 0, 1, 2 };
-
-	g_TriangleVertBuff = VertexBuffer::Create(triangleVert, sizeof(triangleVert));
-	g_TriangleIndxBuff = IndexBuffer::Create(triangleIndx, 3);
 }
 
 void RendererTestLayer::OnDetach() {}
@@ -122,7 +93,9 @@ void RendererTestLayer::OnDetach() {}
 void RendererTestLayer::OnUpdate(Timestep ts)
 {
 	// Update
-	m_OrthoCameraController.OnUpdate(ts);
+	m_PerspCameraController.OnUpdate(ts);
+	g_AnimMesh->OnUpdate(ts);
+	g_Mesh->OnUpdate(ts);
 
 	// Reset statistics
 	Renderer2D::ResetStatistics();
@@ -131,8 +104,8 @@ void RendererTestLayer::OnUpdate(Timestep ts)
 	Renderer::Prepare();
 
 	Renderer::BeginRenderPass(m_RenderPass);
-	Renderer2D::BeginScene(m_OrthoCameraController.GetCamera());
-
+	//Renderer2D::BeginScene(m_PerspCameraController.GetCamera());
+	
 	//for (float y = -1.0f; y < 1.0f; y += 0.1f)
 	//{
 	//	for (float x = -1.0f; x < 1.0f; x += 0.1f)
@@ -141,24 +114,39 @@ void RendererTestLayer::OnUpdate(Timestep ts)
 	//		Renderer2D::DrawQuad({ x, y }, { 0.09f, 0.09f }, color);
 	//	}
 	//}
-
-	Renderer2D::DrawQuad({ -1.5f, 0.0f }, { 1.0f, 1.0f }, { 1.0f, 0.0f, 0.0f, 1.0f });
-	Renderer2D::DrawQuad({ 1.0f, 0.0f }, { 1.0f, 1.0f }, m_PikachuTex);
-	Renderer2D::DrawQuad({ 1.0f, -2.0f }, { 1.0f, 1.0f }, m_EeveeTex);
 	
-	static float rotation = 0.0f;
-	rotation += 0.9f * ts;
-	Renderer2D::DrawRotatedQuad({ 1.0f, 2.0f }, { 1.0f, 1.0f }, rotation, m_EeveeTex);
-	Renderer2D::DrawRotatedQuad({ 2.0f, 0.0f }, { 1.0f, 2.0f }, rotation, { 0.0f, 0.0f, 1.0f, 1.0f });
-
-	Renderer2D::EndScene();
+	//Renderer2D::DrawQuad({ -1.5f, 0.0f }, { 1.0f, 1.0f }, { 1.0f, 0.0f, 0.0f, 1.0f });
+	//Renderer2D::DrawQuad({ 1.0f, 0.0f }, { 1.0f, 1.0f }, m_PikachuTex);
+	//Renderer2D::DrawQuad({ 1.0f, -2.0f }, { 1.0f, 1.0f }, m_EeveeTex);
+	//
+	//static float rotation = 0.0f;
+	//rotation += 0.9f * ts;
+	//Renderer2D::DrawRotatedQuad({ 1.0f, 2.0f }, { 1.0f, 1.0f }, rotation, m_EeveeTex);
+	//Renderer2D::DrawRotatedQuad({ 2.0f, 0.0f }, { 1.0f, 2.0f }, rotation, { 0.0f, 0.0f, 1.0f, 1.0f });
+	//
+	//Renderer2D::EndScene();
 	
-	glm::mat4 viewProj = m_OrthoCameraController.GetCamera().GetViewProjectionMatrix();
+	glm::mat4 viewProj = m_PerspCameraController.GetCamera().GetViewProjectionMatrix();
 	m_Shader->SetUniformBuffer("u_SceneData", &viewProj, sizeof(glm::mat4));
+	
+	static int mode = 0;
+	if (Input::IsKeyPressed(HZ_KEY_1))
+		mode = 0;
+	else if (Input::IsKeyPressed(HZ_KEY_2))
+		mode = 1;
+	else if (Input::IsKeyPressed(HZ_KEY_3))
+		mode = 2;
 
-	Renderer::Submit(m_Pipeline, m_VertexBuffer, m_IndexBuffer, g_Material);
-	Renderer::Submit(m_Pipeline, g_TriangleVertBuff, g_TriangleIndxBuff, g_Instance1);
-	Renderer::Submit(m_Pipeline, g_QuadVertBuff, g_QuadIndxBuff, g_Instance2);
+	glm::mat4 transform = glm::mat4(1.0f);
+	transform = glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, 0.0f, 0.0f));
+	g_Mesh->GetMeshShader()->SetUniformBuffer("u_ControlData", &mode, sizeof(int));
+	g_Mesh->GetMeshShader()->SetUniformBufferParam("u_SceneData", "ViewProj", &viewProj, sizeof(glm::mat4));
+	Renderer::SubmitMesh(g_MeshPipeline, g_Mesh, transform);
+	
+	transform = glm::scale(glm::mat4(1.0f), glm::vec3(35.0f));
+	g_AnimMesh->GetMeshShader()->SetUniformBuffer("u_ControlData", &mode, sizeof(int));
+	g_AnimMesh->GetMeshShader()->SetUniformBufferParam("u_SceneData", "ViewProj", &viewProj, sizeof(glm::mat4));
+	Renderer::SubmitMesh(g_AnimMeshPipeline, g_AnimMesh, transform);
 
 	Renderer::EndRenderPass();
 	Renderer::FlushCommandBuffer();
@@ -173,5 +161,5 @@ void RendererTestLayer::OnImGuiRender()
 
 void RendererTestLayer::OnEvent(Event& e)
 {
-	m_OrthoCameraController.OnEvent(e);
+	m_PerspCameraController.OnEvent(e);
 }

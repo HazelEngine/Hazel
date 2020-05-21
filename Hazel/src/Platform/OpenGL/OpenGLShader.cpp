@@ -146,6 +146,43 @@ namespace Hazel {
 		HZ_CORE_ERROR("Shader uniform buffer {0} doesn't exists!", name)
 	}
 
+	void OpenGLShader::SetUniformBufferParam(const std::string& name, const std::string& param, void* data, uint32_t size)
+	{
+		ShaderUniformBufferDeclaration* ubuffer = nullptr;
+
+		for (auto decl : m_VSUniformBuffers)
+		{
+			if (decl->GetName() == name)
+				ubuffer = decl;
+		}
+		for (auto decl : m_PSUniformBuffers)
+		{
+			if (decl->GetName() == name)
+				ubuffer = decl;
+		}
+
+		if (ubuffer)
+		{
+			auto paramDecl = ubuffer->FindUniform(param);
+			if (paramDecl)
+			{
+				if (size == paramDecl->GetSize())
+				{
+					uint32_t offset = paramDecl->GetOffset();
+					byte* mapped = (byte*)m_UniformBuffers[name]->Map();
+					memcpy(mapped + offset, data, size);
+					m_UniformBuffers[name]->Unmap(offset, size);
+					return;
+				}
+				HZ_CORE_ERROR("Size for param '{0}' has to be equal to {1}, currently is {2}.", param, paramDecl->GetSize(), size)
+				return;
+			}
+			HZ_CORE_ERROR("Param '{0}' doesn't exists for uniform buffer '{1}'!", param, name)
+			return;
+		}
+		HZ_CORE_ERROR("Shader uniform buffer {0} doesn't exists!", name)
+	}
+
 	void OpenGLShader::BindTexture(const std::string& name, const Ref<Texture>& texture)
 	{
 		BindTexture(name, 0, texture);
@@ -257,7 +294,7 @@ namespace Hazel {
 		uint32_t index = 0;
 		for (auto it = m_UniformBuffers.begin(); it != m_UniformBuffers.end(); it++)
 		{
-			ubuffers[index] = it->second;
+			ubuffers[index++] = it->second;
 		}
 
 		return ubuffers;
@@ -573,21 +610,6 @@ namespace Hazel {
 			// Uses the name queried using the id, as it returns the variable name rather than block name
 			auto name = compiler.get_name(ubuffer.id);
 
-			// Has at least 1 uniform
-			uint32_t count = 1;
-
-			// Check if is an array and his size
-			const auto& spvType = compiler.get_type(ubuffer.type_id);
-			if (spvType.array.size() > 0)
-			{
-				count = 0;
-
-				for (uint32_t i = 0; i < spvType.array.size(); i++)
-				{
-					count += spvType.array[i];
-				}
-			}
-
 			// Create the Uniform Buffer Declaration
 			auto bufferDecl = CreateScope<OpenGLShaderUniformBufferDeclaration>(name, binding, domain);
 
@@ -623,6 +645,16 @@ namespace Hazel {
 					else if (memberType.vecsize == 4 && memberType.columns == 4)
 						type = OpenGLShaderUniformDeclaration::Type::Mat4;
 					break;
+				}
+
+				// Has at least 1 uniform
+				uint32_t count = 1;
+
+				// Check if is an array and his size
+				if (memberType.array.size() > 0)
+				{
+					// Support only vectors now
+					count = memberType.array[0];
 				}
 
 				auto uniform = new OpenGLShaderUniformDeclaration(memberName, domain, type, count);

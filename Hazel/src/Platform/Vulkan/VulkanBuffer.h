@@ -40,18 +40,18 @@ namespace Hazel {
 	{
 		
 	public:
-		VulkanIndexBuffer(uint32_t* data, uint32_t count);
+		VulkanIndexBuffer(void* data, uint32_t size);
 		virtual ~VulkanIndexBuffer() = default;
 
 		virtual void Bind() const override {};
 		virtual void Unbind() const override {};
 
-		virtual uint32_t GetCount() const override { return m_Count; }
+		virtual uint32_t GetSize() const override { return m_Size; }
 
 		const VkBuffer& GetDeviceBuffer() const { return m_DeviceBuffer; }
 
 	private:
-		uint32_t m_Count;
+		uint32_t m_Size;
 
 		VkBuffer m_DeviceBuffer;
 		VkDeviceMemory m_DeviceMemory;

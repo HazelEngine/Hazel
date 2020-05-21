@@ -110,11 +110,9 @@ namespace Hazel {
 		vk_Context->FlushCommandBuffer(copyCmd);
 	}
 
-	VulkanIndexBuffer::VulkanIndexBuffer(uint32_t* data, uint32_t count)
-		: m_Count(count)
+	VulkanIndexBuffer::VulkanIndexBuffer(void* data, uint32_t size)
+		: m_Size(size)
 	{
-		uint32_t size = count * sizeof(uint32_t);
-
 		bool useStagingBuffers = true;
 
 		VkMemoryRequirements memReqs;

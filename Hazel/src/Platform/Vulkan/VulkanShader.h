@@ -36,6 +36,7 @@ namespace Hazel {
 		virtual const ShaderResourceList GetResources() const override { return m_Resources; }
 
 		virtual void SetUniformBuffer(const std::string& name, void* data, uint32_t size) override;
+		virtual void SetUniformBufferParam(const std::string& name, const std::string& param, void* data, uint32_t size) override;
 
 		virtual void BindTexture(const std::string& name, const Ref<Texture>& texture) override;
 		virtual void BindTexture(const std::string& name, uint32_t index, const Ref<Texture>& texture) override;
@@ -57,6 +58,7 @@ namespace Hazel {
 
 		virtual uint32_t GetMaterialUniformBufferAlignment() const { return m_MaterialUniformBufferAlignment; }
 
+		uint32_t GetTextureDescriptorSetIndex(const std::string& name) const;
 		const VkDescriptorSet& GetTexturePoolDescriptorSet(const Ref<Texture>& texture) { return m_TexturePool[texture]; }
 
 		virtual const std::string& GetName() const override { return m_Name; }
@@ -67,16 +69,18 @@ namespace Hazel {
 		VkPipelineLayout GetPipelineLayout() const { return m_PipelineLayout; }
 
 		const VkDescriptorSet& GetGlobalDescriptorSet() const { return m_GlobalDescriptorSet; }
-		const VkDescriptorSet& GetTextureDescriptorSet() const { return m_TextureDescriptorSet; }
+		const std::vector<VkDescriptorSet>& GetTextureDescriptorSets() const { return m_TextureDescriptorSets; }
 
 	private:
 		void CreateSamplers();
 		void CreateDescriptorSets();
 		void CreatePipelineLayout();
 
-		const VkDescriptorSet& CreateDescriptorSetForTexture(const Ref<Texture>& texture);
+		const VkDescriptorSet& CreateDescriptorSetForTexture(
+			VulkanShaderResourceDeclaration* resource,
+			const Ref<Texture>& texture
+		);
 
-		// TODO: Remove set, and set set inside resource
 		void UpdateDescriptorSet(VulkanShaderResourceDeclaration* resource, const std::vector<Ref<Texture>>& textures, VkDescriptorSet set);
 		void UpdateDescriptorSet(VulkanShaderUniformBufferDeclaration* ubuffer);
 		void UpdateDescriptorSets();
@@ -119,9 +123,9 @@ namespace Hazel {
 		VkDescriptorSet m_GlobalDescriptorSet = VK_NULL_HANDLE;
 		VkDescriptorSetLayout m_GlobalDescriptorSetLayout = VK_NULL_HANDLE;
 
-		// All the textures should have to be binded to this set (set = 1)
-		VkDescriptorSet m_TextureDescriptorSet = VK_NULL_HANDLE;
-		VkDescriptorSetLayout m_TextureDescriptorSetLayout = VK_NULL_HANDLE;
+		// All the textures should have to be binded to these sets (set >= 1)
+		std::vector<VkDescriptorSet> m_TextureDescriptorSets;
+		std::vector<VkDescriptorSetLayout> m_TextureDescriptorSetLayouts;
 
 		VkPipelineLayout m_PipelineLayout = VK_NULL_HANDLE;
 	};

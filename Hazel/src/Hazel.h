@@ -19,6 +19,7 @@
 #include "Hazel/Renderer/SubTexture2D.h"
 #include "Hazel/Renderer/Shader.h"
 #include "Hazel/Renderer/ShaderUniform.h"
+#include "Hazel/Renderer/Mesh.h"
 #include "Hazel/Renderer/Material.h"
 #include "Hazel/Renderer/VertexArray.h"
 #include "Hazel/Renderer/Renderer.h"

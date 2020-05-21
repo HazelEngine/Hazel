@@ -96,6 +96,15 @@ namespace Hazel {
 		RenderCommand::DrawIndexed(vertexArray);
 	}
 
+	void Renderer::SubmitMesh(
+		const Ref<Pipeline>& pipeline,
+		const Ref<Mesh>& mesh,
+		const glm::mat4& transform,
+		const Ref<MaterialInstance>& overrideMaterial
+	)
+	{
+		s_RenderCommandBuffer->SubmitMesh(pipeline, mesh, transform, overrideMaterial);
+	}
 	
 	void Renderer::FlushCommandBuffer()
 	{

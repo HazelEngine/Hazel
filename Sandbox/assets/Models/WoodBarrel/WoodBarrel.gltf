@@ -1,0 +1,177 @@
+{
+    "asset" : {
+        "generator" : "Khronos glTF Blender I/O v1.1.46",
+        "version" : "2.0"
+    },
+    "scene" : 0,
+    "scenes" : [
+        {
+            "name" : "Scene",
+            "nodes" : [
+                0
+            ]
+        }
+    ],
+    "nodes" : [
+        {
+            "mesh" : 0,
+            "name" : "Aset_wood_misc_M_tmrveaeda_LOD0",
+            "rotation" : [
+                0.7071068286895752,
+                0,
+                0,
+                0.7071067094802856
+            ],
+            "scale" : [
+                0.009999999776482582,
+                0.009999999776482582,
+                0.009999999776482582
+            ]
+        }
+    ],
+    "materials" : [
+        {
+            "doubleSided" : true,
+            "emissiveFactor" : [
+                0,
+                0,
+                0
+            ],
+            "name" : "Material",
+            "normalTexture" : {
+                "index" : 0,
+                "texCoord" : 0
+            },
+            "pbrMetallicRoughness" : {
+                "baseColorTexture" : {
+                    "index" : 1,
+                    "texCoord" : 0
+                },
+                "metallicRoughnessTexture" : {
+                    "index" : 2,
+                    "texCoord" : 0
+                }
+            }
+        }
+    ],
+    "meshes" : [
+        {
+            "name" : "Aset_wood_misc_M_tmrveaeda_LOD0",
+            "primitives" : [
+                {
+                    "attributes" : {
+                        "POSITION" : 0,
+                        "NORMAL" : 1,
+                        "TANGENT" : 2,
+                        "TEXCOORD_0" : 3
+                    },
+                    "indices" : 4,
+                    "material" : 0
+                }
+            ]
+        }
+    ],
+    "textures" : [
+        {
+            "source" : 0
+        },
+        {
+            "source" : 1
+        },
+        {
+            "source" : 2
+        }
+    ],
+    "images" : [
+        {
+            "mimeType" : "image/png",
+            "name" : "WoodBarrel_Normal",
+            "uri" : "Textures/WoodBarrel_Normal.png"
+        },
+        {
+            "mimeType" : "image/png",
+            "name" : "WoodBarrel_Albedo",
+            "uri" : "Textures/WoodBarrel_Albedo.png"
+        },
+        {
+            "mimeType" : "image/png",
+            "name" : "WoodBarrel_Roughness_Metallic_Displacement",
+            "uri" : "Textures/WoodBarrel_Roughness_Metallic_Displacement.png"
+        }
+    ],
+    "accessors" : [
+        {
+            "bufferView" : 0,
+            "componentType" : 5126,
+            "count" : 9322,
+            "max" : [
+                30.2282772064209,
+                29.97578239440918,
+                0.29568052291870117
+            ],
+            "min" : [
+                -30.24222755432129,
+                -29.97578239440918,
+                -84.43409729003906
+            ],
+            "type" : "VEC3"
+        },
+        {
+            "bufferView" : 1,
+            "componentType" : 5126,
+            "count" : 9322,
+            "type" : "VEC3"
+        },
+        {
+            "bufferView" : 2,
+            "componentType" : 5126,
+            "count" : 9322,
+            "type" : "VEC4"
+        },
+        {
+            "bufferView" : 3,
+            "componentType" : 5126,
+            "count" : 9322,
+            "type" : "VEC2"
+        },
+        {
+            "bufferView" : 4,
+            "componentType" : 5123,
+            "count" : 50826,
+            "type" : "SCALAR"
+        }
+    ],
+    "bufferViews" : [
+        {
+            "buffer" : 0,
+            "byteLength" : 111864,
+            "byteOffset" : 0
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 111864,
+            "byteOffset" : 111864
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 149152,
+            "byteOffset" : 223728
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 74576,
+            "byteOffset" : 372880
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 101652,
+            "byteOffset" : 447456
+        }
+    ],
+    "buffers" : [
+        {
+            "byteLength" : 549108,
+            "uri" : "WoodBarrel.bin"
+        }
+    ]
+}

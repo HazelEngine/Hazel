@@ -98,7 +98,7 @@ namespace Hazel {
 		depthStencilInfo.depthTestEnable = VK_FALSE;
 		depthStencilInfo.depthWriteEnable = VK_FALSE;
 		depthStencilInfo.depthBoundsTestEnable = VK_FALSE;
-		depthStencilInfo.depthCompareOp = VK_COMPARE_OP_ALWAYS;
+		depthStencilInfo.depthCompareOp = VK_COMPARE_OP_LESS;
 		depthStencilInfo.stencilTestEnable = VK_FALSE;
 		depthStencilInfo.back.passOp = VK_STENCIL_OP_KEEP;
 		depthStencilInfo.back.failOp = VK_STENCIL_OP_KEEP;

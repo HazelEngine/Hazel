@@ -52,6 +52,12 @@ namespace Hazel {
 		void Set(const std::string& name, const Ref<Texture>& texture)
 		{
 			auto resource = FindResourceDeclaration(name);
+			if (!resource)
+			{
+				HZ_CORE_ERROR("Could not find resource with name '{0}'", name)
+				return;
+			}
+
 			m_Textures[resource->GetName()] = texture;
 		}
 
@@ -126,6 +132,12 @@ namespace Hazel {
 		void Set(const std::string& name, const Ref<Texture>& texture)
 		{
 			auto resource = m_Material->FindResourceDeclaration(name);
+			if (!resource)
+			{
+				HZ_CORE_ERROR("Could not find resource with name '{0}'", name)
+				return;
+			}
+
 			m_Textures[resource->GetName()] = texture;
 		}
 

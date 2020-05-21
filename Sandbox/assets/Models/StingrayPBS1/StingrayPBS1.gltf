@@ -1,0 +1,190 @@
+{
+    "asset" : {
+        "generator" : "Khronos glTF Blender I/O v1.1.46",
+        "version" : "2.0"
+    },
+    "scene" : 0,
+    "scenes" : [
+        {
+            "name" : "Scene",
+            "nodes" : [
+                0
+            ]
+        }
+    ],
+    "nodes" : [
+        {
+            "mesh" : 0,
+            "name" : "StingrayPBS1",
+            "rotation" : [
+                0.7071068286895752,
+                0,
+                0,
+                0.7071067094802856
+            ],
+            "scale" : [
+                0.009999999776482582,
+                0.009999999776482582,
+                0.009999999776482582
+            ]
+        }
+    ],
+    "materials" : [
+        {
+            "doubleSided" : true,
+            "emissiveFactor" : [
+                1,
+                1,
+                1
+            ],
+            "emissiveTexture" : {
+                "index" : 0,
+                "texCoord" : 0
+            },
+            "name" : "StingrayPBS1",
+            "normalTexture" : {
+                "index" : 1,
+                "scale" : 0,
+                "texCoord" : 0
+            },
+            "pbrMetallicRoughness" : {
+                "baseColorTexture" : {
+                    "index" : 2,
+                    "texCoord" : 0
+                },
+                "metallicRoughnessTexture" : {
+                    "index" : 3,
+                    "texCoord" : 0
+                }
+            },
+            "occlusionTexture" : {
+                "index" : 4,
+                "texCoord" : 0
+            }
+        }
+    ],
+    "meshes" : [
+        {
+            "name" : "StingrayPBS1",
+            "primitives" : [
+                {
+                    "attributes" : {
+                        "POSITION" : 0,
+                        "NORMAL" : 1,
+                        "TEXCOORD_0" : 2
+                    },
+                    "indices" : 3,
+                    "material" : 0
+                }
+            ]
+        }
+    ],
+    "textures" : [
+        {
+            "source" : 0
+        },
+        {
+            "source" : 1
+        },
+        {
+            "source" : 2
+        },
+        {
+            "source" : 3
+        },
+        {
+            "source" : 4
+        }
+    ],
+    "images" : [
+        {
+            "mimeType" : "image/png",
+            "name" : "StingrayPBS1_Emissive",
+            "uri" : "Textures/StingrayPBS1_Emissive.png"
+        },
+        {
+            "mimeType" : "image/png",
+            "name" : "StingrayPBS1_Normal",
+            "uri" : "Textures/StingrayPBS1_Normal.png"
+        },
+        {
+            "mimeType" : "image/png",
+            "name" : "StingrayPBS1_BaseColor",
+            "uri" : "Textures/StingrayPBS1_BaseColor.png"
+        },
+        {
+            "mimeType" : "image/png",
+            "name" : "StingrayPBS1_Metallic_Roughness",
+            "uri" : "Textures/StingrayPBS1_Metallic_Roughness.png"
+        },
+        {
+            "mimeType" : "image/png",
+            "name" : "StingrayPBS1_AmbientOcclusion",
+            "uri" : "Textures/StingrayPBS1_AmbientOcclusion.png"
+        }
+    ],
+    "accessors" : [
+        {
+            "bufferView" : 0,
+            "componentType" : 5126,
+            "count" : 46922,
+            "max" : [
+                178.7843017578125,
+                346.36920166015625,
+                81.39093780517578
+            ],
+            "min" : [
+                -178.7843017578125,
+                -422.0754089355469,
+                -129.14300537109375
+            ],
+            "type" : "VEC3"
+        },
+        {
+            "bufferView" : 1,
+            "componentType" : 5126,
+            "count" : 46922,
+            "type" : "VEC3"
+        },
+        {
+            "bufferView" : 2,
+            "componentType" : 5126,
+            "count" : 46922,
+            "type" : "VEC2"
+        },
+        {
+            "bufferView" : 3,
+            "componentType" : 5123,
+            "count" : 203667,
+            "type" : "SCALAR"
+        }
+    ],
+    "bufferViews" : [
+        {
+            "buffer" : 0,
+            "byteLength" : 563064,
+            "byteOffset" : 0
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 563064,
+            "byteOffset" : 563064
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 375376,
+            "byteOffset" : 1126128
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 407334,
+            "byteOffset" : 1501504
+        }
+    ],
+    "buffers" : [
+        {
+            "byteLength" : 1908840,
+            "uri" : "StingrayPBS1.bin"
+        }
+    ]
+}

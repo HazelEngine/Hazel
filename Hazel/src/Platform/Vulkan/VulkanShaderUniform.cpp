@@ -3,8 +3,21 @@
 
 namespace Hazel {
 
-	VulkanShaderResourceDeclaration::VulkanShaderResourceDeclaration(const std::string& name, uint32_t binding, ShaderDomain domain, Type type, Dimension dimension, uint32_t count)
-		: m_Name(name), m_Binding(binding), m_Domain(domain), m_Type(type), m_Dimension(dimension), m_Count(count) {}
+	VulkanShaderResourceDeclaration::VulkanShaderResourceDeclaration(
+		const std::string& name,
+		uint32_t set,
+		uint32_t binding,
+		ShaderDomain domain,
+		Type type,
+		Dimension dimension,
+		uint32_t count
+	) : m_Name(name),
+		m_Set(set),
+		m_Binding(binding),
+		m_Domain(domain),
+		m_Type(type),
+		m_Dimension(dimension),
+		m_Count(count) {}
 
 	VulkanShaderUniformDeclaration::VulkanShaderUniformDeclaration(const std::string& name, ShaderDomain domain, Type type, uint32_t count)
 		: m_Name(name), m_Domain(domain), m_Type(type), m_Count(count)

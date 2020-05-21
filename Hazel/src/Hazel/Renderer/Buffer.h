@@ -117,7 +117,6 @@ namespace Hazel {
 		static Ref<VertexBuffer> Create(void* data, uint32_t size);
 	};
 
-	// Currently Hazel only supports 32-bit index buffers
 	class HAZEL_API IndexBuffer
 	{
 	public:
@@ -126,9 +125,9 @@ namespace Hazel {
 		virtual void Bind() const = 0;
 		virtual void Unbind() const = 0;
 
-		virtual uint32_t GetCount() const = 0;
+		virtual uint32_t GetSize() const = 0;
 
-		static Ref<IndexBuffer> Create(uint32_t* indices, uint32_t count);
+		static Ref<IndexBuffer> Create(void* data, uint32_t size = 0);
 	};
 
 	class HAZEL_API UniformBuffer

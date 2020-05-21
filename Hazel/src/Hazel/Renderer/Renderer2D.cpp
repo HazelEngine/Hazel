@@ -81,7 +81,7 @@ namespace Hazel {
 			offset += 4;
 		}
 		
-		s_Data->QuadIndexBuffer = IndexBuffer::Create(indices, s_Data->MaxIndices);
+		s_Data->QuadIndexBuffer = IndexBuffer::Create(indices, s_Data->MaxIndices * sizeof(uint32_t));
 		delete[] indices;
 		
 		// TextureColor shader

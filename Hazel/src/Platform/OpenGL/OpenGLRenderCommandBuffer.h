@@ -36,6 +36,13 @@ namespace Hazel {
 			uint32_t indexCount = 0
 		) override;
 
+		virtual void SubmitMesh(
+			const Ref<Pipeline>& pipeline,
+			const Ref<Mesh>& mesh,
+			const glm::mat4& transform,
+			const Ref<MaterialInstance>& overrideMaterial
+		) override;
+
 		virtual void Flush() override;
 
 	private:

@@ -48,23 +48,23 @@ namespace Hazel {
 		}
 	}
 
-	Ref<IndexBuffer> IndexBuffer::Create(uint32_t* indices, uint32_t count)
+	Ref<IndexBuffer> IndexBuffer::Create(void* data, uint32_t size)
 	{
 		switch (Renderer::GetAPI())
 		{
 			case RendererAPI::API::None:
 				HZ_CORE_ASSERT(false, "RendererAPI::None is currently not supported!")
-				return nullptr;
+					return nullptr;
 
 			case RendererAPI::API::OpenGL:
-				return CreateRef<OpenGLIndexBuffer>(indices, count);
+				return CreateRef<OpenGLIndexBuffer>(data, size);
 
 			case RendererAPI::API::Vulkan:
-				return CreateRef<VulkanIndexBuffer>(indices, count);
+				return CreateRef<VulkanIndexBuffer>(data, size);
 
 			default:
 				HZ_CORE_ASSERT(false, "Unknown RendererAPI!")
-				return nullptr;
+					return nullptr;
 		}
 	}
 

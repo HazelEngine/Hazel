@@ -20,6 +20,7 @@ IncludeDir["stb"]       = "Hazel/vendor/stb"
 IncludeDir["GLM"]       = "Hazel/vendor/GLM"
 IncludeDir["ImGui"]     = "Hazel/vendor/ImGui"
 IncludeDir["SPIRVC"]    = "Hazel/vendor/SPIRV-Cross"
+IncludeDir["Assimp"]    = "Hazel/vendor/Assimp"
 IncludeDir["Vulkan"]    = os.getenv("VULKAN_SDK")
 
 group "ThirdParty"
@@ -61,7 +62,14 @@ project "Hazel"
 		"%{IncludeDir.GLM}",
 		"%{IncludeDir.ImGui}",
 		"%{IncludeDir.SPIRVC}",
+		"%{IncludeDir.Assimp}/Include",	
 		"%{IncludeDir.Vulkan}/Include"
+	}
+
+	libdirs
+	{ 
+		"%{IncludeDir.Assimp}/Lib/Win64/Debug",
+		"%{IncludeDir.Vulkan}/Lib/"
 	}
 
 	links
@@ -70,8 +78,9 @@ project "Hazel"
 		"GLAD",
 		"ImGui",
 		"SPIRVC",
+		"assimp.lib",
 		"opengl32.lib",
-		"%{IncludeDir.Vulkan}/Lib/vulkan-1.lib"
+		"vulkan-1.lib"
 	}
 
 	filter "system:windows"

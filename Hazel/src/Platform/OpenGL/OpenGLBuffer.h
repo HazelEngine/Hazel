@@ -35,19 +35,19 @@ namespace Hazel {
 	class HAZEL_API OpenGLIndexBuffer : public IndexBuffer
 	{
 	public:
-		OpenGLIndexBuffer(uint32_t* indices, uint32_t count);
+		OpenGLIndexBuffer(void* data, uint32_t size);
 		virtual ~OpenGLIndexBuffer();
 
 		virtual void Bind() const override;
 		virtual void Unbind() const override;
 
-		virtual uint32_t GetCount() const override { return m_Count; }
+		virtual uint32_t GetSize() const override { return m_Size; }
 
 		virtual uint32_t GetRendererId() const { return m_RendererId; }
 
 	private:
 		uint32_t m_RendererId;
-		uint32_t m_Count;
+		uint32_t m_Size;
 	};
 
 	class HAZEL_API OpenGLUniformBuffer : public UniformBuffer

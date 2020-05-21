@@ -19,18 +19,29 @@ namespace Hazel {
 		};
 
 	public:
-		VulkanShaderResourceDeclaration(const std::string& name, uint32_t binding, ShaderDomain domain, Type type, Dimension dimension, uint32_t count);
+		VulkanShaderResourceDeclaration(
+			const std::string& name,
+			uint32_t set, 
+			uint32_t binding, 
+			ShaderDomain domain, 
+			Type type, 
+			Dimension dimension, 
+			uint32_t count
+		);
 
 		inline const std::string& GetName() const override { return m_Name; }
 		inline uint32_t GetBinding() const override { return m_Binding; }
 		inline uint32_t GetCount() const override { return m_Count; }
 		inline ShaderDomain GetDomain() const override { return m_Domain; }
 
+		inline uint32_t GetSet() const { return m_Set; }
+
 		inline Type GetType() const { return m_Type; }
 		inline Dimension GetDimension() const { return m_Dimension; }
 
 	private:
 		std::string m_Name;
+		uint32_t m_Set;
 		uint32_t m_Binding;
 		uint32_t m_Count;
 

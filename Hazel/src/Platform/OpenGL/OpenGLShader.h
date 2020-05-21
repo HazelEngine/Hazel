@@ -36,6 +36,7 @@ namespace Hazel {
 		virtual const ShaderResourceList GetResources() const override { return m_Resources; }
 
 		virtual void SetUniformBuffer(const std::string& name, void* data, uint32_t size) override;
+		virtual void SetUniformBufferParam(const std::string& name, const std::string& param, void* data, uint32_t size) override;
 
 		virtual void BindTexture(const std::string& name, const Ref<Texture>& texture) override;
 		virtual void BindTexture(const std::string& name, uint32_t index, const Ref<Texture>& texture) override;
