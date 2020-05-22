@@ -25,10 +25,9 @@ namespace Hazel {
 
 			auto& clearColor = vk_RenderPass->GetSpecification().TargetFramebuffer->GetSpecification().ClearColor;
 
-			//VkClearValue clearValues[2];
-			//clearValues[0].color = {{ clearColor.r, clearColor.g, clearColor.b, clearColor.a }};
-			//clearValues[1].depthStencil = { 1.0f, 0 };
-			VkClearValue clearValue = {{ clearColor.r, clearColor.g, clearColor.b, clearColor.a }};
+			VkClearValue clearValues[2];
+			clearValues[0].color = {{ clearColor.r, clearColor.g, clearColor.b, clearColor.a }};
+			clearValues[1].depthStencil = { 1.0f, 0 };
 
 			VkRenderPassBeginInfo renderPassBeginInfo = {};
 			renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -38,8 +37,8 @@ namespace Hazel {
 			renderPassBeginInfo.renderArea.offset.y = 0;
 			renderPassBeginInfo.renderArea.extent.width = vk_Context->GetWidth();
 			renderPassBeginInfo.renderArea.extent.height = vk_Context->GetHeight();
-			renderPassBeginInfo.clearValueCount = 1;
-			renderPassBeginInfo.pClearValues = &clearValue;
+			renderPassBeginInfo.clearValueCount = 2;
+			renderPassBeginInfo.pClearValues = clearValues;
 			
 			renderPassBeginInfo.framebuffer = framebuffer;
 

@@ -48,6 +48,9 @@ namespace Hazel {
 		m_SwapchainHeight = 720;
 		m_Swapchain->Create(&m_SwapchainWidth, &m_SwapchainHeight, true);
 
+		// Depth/Stencil resources creation
+		CreateDepthStencilResources();
+
 		// RenderPass
 		CreateRenderPass();
 
@@ -201,32 +204,121 @@ namespace Hazel {
 		VK_CHECK_RESULT(vkCreateInstance(&instanceInfo, nullptr, &m_Instance));
 	}
 
+	void VulkanContext::CreateDepthStencilResources()
+	{
+		m_DepthStencilFormat = VK_FORMAT_D32_SFLOAT_S8_UINT;
+
+		// Create the image
+
+		VkImageCreateInfo imageInfo = {};
+		imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+		imageInfo.mipLevels = 1;
+		imageInfo.format = m_DepthStencilFormat;
+		imageInfo.arrayLayers = 1;
+		imageInfo.extent.width = m_SwapchainWidth;
+		imageInfo.extent.height = m_SwapchainHeight;
+		imageInfo.extent.depth = 1;
+		imageInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+		imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		imageInfo.imageType = VK_IMAGE_TYPE_2D;
+		imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+		imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+		VK_CHECK_RESULT(vkCreateImage(
+			m_Device->GetLogicalDevice(),
+			&imageInfo,
+			nullptr,
+			&m_DepthStencilBuffer.image
+		));
+
+		// Allocate memory for image
+
+		VkMemoryRequirements memReqs;
+		vkGetImageMemoryRequirements(m_Device->GetLogicalDevice(), m_DepthStencilBuffer.image, &memReqs);
+
+		m_MemoryAllocator->Allocate(
+			memReqs,
+			&m_DepthStencilBufferMemory,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+		);
+
+		vkBindImageMemory(
+			m_Device->GetLogicalDevice(),
+			m_DepthStencilBuffer.image,
+			m_DepthStencilBufferMemory,
+			0
+		);
+
+		// Create the ImageView
+
+		VkImageViewCreateInfo depthAttachmentView = {};
+		depthAttachmentView.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		depthAttachmentView.format = m_DepthStencilFormat;
+		depthAttachmentView.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+		depthAttachmentView.subresourceRange.levelCount = 1;
+		depthAttachmentView.subresourceRange.layerCount = 1;
+		depthAttachmentView.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		depthAttachmentView.image = m_DepthStencilBuffer.image;
+
+		VK_CHECK_RESULT(vkCreateImageView(
+			m_Device->GetLogicalDevice(),
+			&depthAttachmentView,
+			nullptr, 
+			&m_DepthStencilBuffer.view
+		));
+	}
+
 	void VulkanContext::CreateRenderPass()
 	{
-		VkAttachmentDescription attachmentDesc = {};
-		attachmentDesc.samples = VK_SAMPLE_COUNT_1_BIT; // TODO: Sample Count?
-		attachmentDesc.format = m_Swapchain->GetFormat();
-		attachmentDesc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		attachmentDesc.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-		attachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		attachmentDesc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		attachmentDesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		attachmentDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		// Color Attachment
 
-		VkAttachmentReference attachmentRef = {};
-		attachmentRef.attachment = 0;
-		attachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		VkAttachmentDescription colorAttachmentDesc = {};
+		colorAttachmentDesc.samples = VK_SAMPLE_COUNT_1_BIT; // TODO: Sample Count?
+		colorAttachmentDesc.format = m_Swapchain->GetFormat();
+		colorAttachmentDesc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		colorAttachmentDesc.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+		colorAttachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		colorAttachmentDesc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		colorAttachmentDesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		colorAttachmentDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+
+		VkAttachmentReference colorAttachmentRef = {};
+		colorAttachmentRef.attachment = 0;
+		colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+		// Depth Attachment
+
+		VkAttachmentDescription depthAttachmentDesc = {};
+		depthAttachmentDesc.samples = VK_SAMPLE_COUNT_1_BIT; // TODO: Sample Count?
+		depthAttachmentDesc.format = m_DepthStencilFormat;
+		depthAttachmentDesc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		depthAttachmentDesc.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		depthAttachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		depthAttachmentDesc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		depthAttachmentDesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		depthAttachmentDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+
+		VkAttachmentReference depthAttachmentRef = {};
+		depthAttachmentRef.attachment = 1;
+		depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+		// Subpass
 
 		VkSubpassDescription subpassDesc = {};
 		subpassDesc.inputAttachmentCount = 0;
-		subpassDesc.pColorAttachments = &attachmentRef;
+		subpassDesc.pColorAttachments = &colorAttachmentRef;
 		subpassDesc.colorAttachmentCount = 1;
+		subpassDesc.pDepthStencilAttachment = &depthAttachmentRef;
 		subpassDesc.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 
+		// Create RenderPass
+
+		std::array<VkAttachmentDescription, 2> attachments = { colorAttachmentDesc, depthAttachmentDesc };
+		
 		VkRenderPassCreateInfo renderPassInfo = {};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-		renderPassInfo.pAttachments = &attachmentDesc;
-		renderPassInfo.attachmentCount = 1;
+		renderPassInfo.pAttachments = attachments.data();
+		renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
 		renderPassInfo.pSubpasses = &subpassDesc;
 		renderPassInfo.subpassCount = 1;
 
@@ -245,14 +337,21 @@ namespace Hazel {
 		VkFramebufferCreateInfo framebufferInfo = {};
 		framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 		framebufferInfo.renderPass = m_RenderPass;
-		framebufferInfo.attachmentCount = 1;
+		framebufferInfo.attachmentCount = 2;
 		framebufferInfo.width = m_SwapchainWidth;
 		framebufferInfo.height = m_SwapchainHeight;
 		framebufferInfo.layers = 1;
 
+		std::array<VkImageView, 2> attachments;
 		for (uint32_t i = 0; i < m_Swapchain->GetBufferCount(); i++)
 		{
-			framebufferInfo.pAttachments = { &m_Swapchain->GetBuffer(i).view };
+			attachments = {
+				m_Swapchain->GetBuffer(i).view,
+				m_DepthStencilBuffer.view
+			};
+
+			framebufferInfo.pAttachments = attachments.data();
+
 			VK_CHECK_RESULT(vkCreateFramebuffer(
 				m_Device->GetLogicalDevice(),
 				&framebufferInfo,

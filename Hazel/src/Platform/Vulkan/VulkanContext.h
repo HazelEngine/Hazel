@@ -51,6 +51,7 @@ namespace Hazel {
 
 	private:
 		void CreateInstance();
+		void CreateDepthStencilResources();
 		void CreateRenderPass();
 		void CreateFramebuffers();
 		void CreateCommandPool();
@@ -67,6 +68,10 @@ namespace Hazel {
 		Scope<VulkanDevice> m_Device;
 		Scope<VulkanSwapchain> m_Swapchain;
 		Scope<VulkanMemoryAllocator> m_MemoryAllocator;
+
+		SwapchainBuffer m_DepthStencilBuffer;
+		VkDeviceMemory m_DepthStencilBufferMemory;
+		VkFormat m_DepthStencilFormat;
 
 		VkRenderPass m_RenderPass;
 
