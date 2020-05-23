@@ -8,6 +8,10 @@
 #define MAX_MAT_INSTANCES 20
 
 typedef unsigned int GLenum;
+namespace spirv_cross {
+	class Compiler;
+	struct SPIRType;
+}
 
 namespace Hazel {
 
@@ -85,6 +89,8 @@ namespace Hazel {
 		std::string ReadFile(const std::string& filepath);
 		std::unordered_map<GLenum, std::string> PreProcess(const std::string& source);
 		void Compile(const std::unordered_map<GLenum, std::string>& shaderSrcs);
+
+		ShaderStruct* ParseShaderStruct(spirv_cross::Compiler& compiler, spirv_cross::SPIRType type, const std::string& name, ShaderDomain domain);
 
 		void GetShaderResources(const std::vector<uint32_t>& spirv, ShaderDomain domain);
 		void GenerateShaderResources();

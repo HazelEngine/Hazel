@@ -12,11 +12,19 @@ namespace Hazel {
 		m_Size = SizeOfUniformType(type) * count;
 	}
 
+	OpenGLShaderUniformDeclaration::OpenGLShaderUniformDeclaration(const std::string& name, ShaderDomain domain, ShaderStruct* ustruct, uint32_t count)
+		: m_Name(name), m_Domain(domain), m_Type(Type::Struct), m_Struct(ustruct), m_Count(count)
+	{
+		m_Size = m_Struct->GetSize() * count;
+	}
+
 	uint32_t OpenGLShaderUniformDeclaration::SizeOfUniformType(Type type)
 	{
 		switch (type)
 		{
+			case OpenGLShaderUniformDeclaration::Type::Boolean:	   return 1;
 			case OpenGLShaderUniformDeclaration::Type::Int32:      return 4;
+			case OpenGLShaderUniformDeclaration::Type::UInt32:     return 4;
 			case OpenGLShaderUniformDeclaration::Type::Float32:    return 4;
 			case OpenGLShaderUniformDeclaration::Type::Vec2:       return 4 * 2;
 			case OpenGLShaderUniformDeclaration::Type::Vec3:       return 4 * 3;
@@ -30,6 +38,9 @@ namespace Hazel {
 
 	void OpenGLShaderUniformDeclaration::SetOffset(uint32_t offset)
 	{
+		if (m_Type == Type::Struct)
+			m_Struct->SetOffset(offset);
+
 		m_Offset = offset;
 	}
 

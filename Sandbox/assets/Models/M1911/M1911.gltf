@@ -756,8 +756,8 @@
         },
         {
             "mimeType" : "image/png",
-            "name" : "M1911_Metallic-M1911_Roughness",
-            "uri" : "Textures/M1911_Metallic_Roughness.png"
+            "name" : "M1911_RoughnessMetallic",
+            "uri" : "Textures/M1911_RoughnessMetallic.png"
         }
     ],
     "skins" : [

@@ -258,6 +258,10 @@ namespace Hazel {
 				HZ_MESH_LOG("  Metalness = {0}", aiMetalness)
 				HZ_MESH_LOG("  Roughness = {0}", aiRoughness)
 
+				instance->Set("AlbedoColor", glm::vec3(aiColor.r, aiColor.g, aiColor.b));
+				instance->Set("Metalness", aiMetalness);
+				instance->Set("Roughness", aiRoughness);
+
 				// Albedo map
 				if (aiMaterial->GetTexture(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_BASE_COLOR_TEXTURE, &aiTexPath) == AI_SUCCESS)
 				{
@@ -284,7 +288,6 @@ namespace Hazel {
 				{
 					HZ_MESH_LOG("  Mesh has no albedo texture")
 					instance->Set("EnableAlbedoTexture", false);
-					instance->Set("AlbedoColor", glm::vec3(aiColor.r, aiColor.g, aiColor.b));
 				}
 
 				// Normal map
@@ -314,7 +317,7 @@ namespace Hazel {
 					instance->Set("EnableNormalTexture", false);
 				}
 
-				// Metalness/Roughness map
+				// Roughness/Metalness map
 				if (aiMaterial->GetTexture(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, &aiTexPath) == AI_SUCCESS)
 				{
 					// TODO: Temp - this should be handled by Hazel's filesystem
@@ -326,9 +329,9 @@ namespace Hazel {
 					auto texture = Texture2D::Create(texturePath);
 					if (texture)
 					{
-						HZ_MESH_LOG("  Metalness/Roughness texture path = {0}", texturePath)
-						instance->Set("u_MetalnessRoughnessTexture", texture);
-						instance->Set("EnableMetalnessRoughnessTexture", true);
+						HZ_MESH_LOG("  Roughness/Metalness texture path = {0}", texturePath)
+						instance->Set("u_RoughnessMetalnessTexture", texture);
+						instance->Set("EnableRoughnessMetalnessTexture", true);
 					}
 					else
 					{
@@ -337,10 +340,8 @@ namespace Hazel {
 				}
 				else
 				{
-					HZ_MESH_LOG("  Mesh has no roughness texture")
-					instance->Set("EnableMetalnessRoughnessTexture", false);
-					instance->Set("Metalness", aiMetalness);
-					instance->Set("Roughness", aiRoughness);
+					HZ_MESH_LOG("  Mesh has no roughness/metalness texture")
+					instance->Set("EnableRoughnessMetalnessTexture", false);
 				}
 
 				// Bind the instance to upload params to shader

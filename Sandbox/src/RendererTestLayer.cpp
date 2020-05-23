@@ -3,8 +3,17 @@
 #include <imgui.h>
 #include <glm/gtc/type_ptr.hpp>
 
+struct Light
+{
+	glm::vec3 Direction;
+	float Padding;
+	glm::vec3 Radiance;
+	float Multiplier = 1.0f;
+};
+
 Ref<Pipeline> g_MeshPipeline, g_AnimMeshPipeline;
 Ref<Mesh> g_Mesh, g_AnimMesh;
+Light g_Light;
 
 RendererTestLayer::RendererTestLayer()
 	: Layer("RendererTestLayer"),
@@ -57,6 +66,9 @@ void RendererTestLayer::OnAttach()
 	animMeshPipelineSpec.VertexBufferLayout = g_AnimMesh->GetVertexBuffer()->GetLayout();
 
 	g_AnimMeshPipeline = Pipeline::Create(animMeshPipelineSpec);
+
+	g_Light.Direction = { -0.5f, -0.5f, 1.0f };
+	g_Light.Radiance = { 1.0f, 1.0f, 1.0f };
 
 	///////////////////////////////////////////////////////////////////
 
@@ -127,24 +139,19 @@ void RendererTestLayer::OnUpdate(Timestep ts)
 	//Renderer2D::EndScene();
 	
 	glm::mat4 viewProj = m_PerspCameraController.GetCamera().GetViewProjectionMatrix();
+	glm::vec3 camPos = m_PerspCameraController.GetCamera().GetPosition();
 	m_Shader->SetUniformBuffer("u_SceneData", &viewProj, sizeof(glm::mat4));
-	
-	static int mode = 0;
-	if (Input::IsKeyPressed(HZ_KEY_1))
-		mode = 0;
-	else if (Input::IsKeyPressed(HZ_KEY_2))
-		mode = 1;
-	else if (Input::IsKeyPressed(HZ_KEY_3))
-		mode = 2;
 
 	glm::mat4 transform = glm::mat4(1.0f);
 	transform = glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, 0.0f, 0.0f));
-	g_Mesh->GetMeshShader()->SetUniformBuffer("u_ControlData", &mode, sizeof(int));
+	g_Mesh->GetMeshShader()->SetUniformBufferParam("u_RenderData", "CameraPosition", &camPos, sizeof(glm::vec3));
+	g_Mesh->GetMeshShader()->SetUniformBufferParam("u_RenderData", "Lights", &g_Light, sizeof(Light));
 	g_Mesh->GetMeshShader()->SetUniformBufferParam("u_SceneData", "ViewProj", &viewProj, sizeof(glm::mat4));
 	Renderer::SubmitMesh(g_MeshPipeline, g_Mesh, transform);
 	
 	transform = glm::scale(glm::mat4(1.0f), glm::vec3(35.0f));
-	g_AnimMesh->GetMeshShader()->SetUniformBuffer("u_ControlData", &mode, sizeof(int));
+	g_AnimMesh->GetMeshShader()->SetUniformBufferParam("u_RenderData", "CameraPosition", &camPos, sizeof(glm::vec3));
+	g_AnimMesh->GetMeshShader()->SetUniformBufferParam("u_RenderData", "Lights", &g_Light, sizeof(Light));
 	g_AnimMesh->GetMeshShader()->SetUniformBufferParam("u_SceneData", "ViewProj", &viewProj, sizeof(glm::mat4));
 	Renderer::SubmitMesh(g_AnimMeshPipeline, g_AnimMesh, transform);
 

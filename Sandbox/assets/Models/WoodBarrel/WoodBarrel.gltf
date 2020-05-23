@@ -95,8 +95,8 @@
         },
         {
             "mimeType" : "image/png",
-            "name" : "WoodBarrel_Roughness_Metallic_Displacement",
-            "uri" : "Textures/WoodBarrel_Roughness_Metallic_Displacement.png"
+            "name" : "WoodBarrel_RoughnessMetalness",
+            "uri" : "Textures/WoodBarrel_RoughnessMetalness.png"
         }
     ],
     "accessors" : [

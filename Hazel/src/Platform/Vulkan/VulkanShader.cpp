@@ -834,19 +834,31 @@ namespace Hazel {
 			auto bufferDecl = CreateScope<VulkanShaderUniformBufferDeclaration>(name, binding, domain);
 
 			// Loop through all members of the uniform buffer, and create a Uniform Declaration for each them
-			uint32_t index = 0;
 			const auto& spvBaseType = compiler.get_type(ubuffer.base_type_id);
-			for (auto typeId : spvBaseType.member_types)
+			for (size_t i = 0; i < spvBaseType.member_types.size(); i++)
 			{
-				auto memberType = compiler.get_type(typeId);
-				auto memberName = compiler.get_member_name(spvBaseType.self, index);
+				auto memberType = compiler.get_type(spvBaseType.member_types[i]);
+				auto memberName = compiler.get_member_name(spvBaseType.self, i);
 
 				// Get type
 				auto type = VulkanShaderUniformDeclaration::Type::None;
+				ShaderStruct* ustruct = nullptr;
 				switch (memberType.basetype)
 				{
+				case spirv_cross::SPIRType::Struct:
+					ustruct = ParseShaderStruct(compiler, memberType, memberName, domain);
+					break;
+
+				case spirv_cross::SPIRType::Boolean:
+					type = VulkanShaderUniformDeclaration::Type::Boolean;
+					break;
+
 				case spirv_cross::SPIRType::Int:
 					type = VulkanShaderUniformDeclaration::Type::Int32;
+					break;
+
+				case spirv_cross::SPIRType::UInt:
+					type = VulkanShaderUniformDeclaration::Type::UInt32;
 					break;
 
 				case spirv_cross::SPIRType::Float:
@@ -877,10 +889,13 @@ namespace Hazel {
 					count = memberType.array[0];
 				}
 
-				auto uniform = new VulkanShaderUniformDeclaration(memberName, domain, type, count);
+				VulkanShaderUniformDeclaration* uniform;
+				if (ustruct)
+					uniform = new VulkanShaderUniformDeclaration(memberName, domain, ustruct, count);
+				else
+					uniform = new VulkanShaderUniformDeclaration(memberName, domain, type, count);
+				
 				bufferDecl->PushUniform(uniform);
-
-				index++;
 			}
 
 			// TODO: Define this string as static
@@ -972,6 +987,76 @@ namespace Hazel {
 				m_Textures[resource->GetName()] = textures;
 			}
 		}
+	}
+
+	ShaderStruct* VulkanShader::ParseShaderStruct(spirv_cross::Compiler& compiler, spirv_cross::SPIRType type, const std::string& name, ShaderDomain domain)
+	{
+		auto ustruct = new ShaderStruct(name);
+
+		for (size_t i = 0; i < type.member_types.size(); i++)
+		{
+			auto fieldType = compiler.get_type(type.member_types[i]);
+			auto fieldName = compiler.get_member_name(type.self, i);
+
+			// Get type
+			auto type = VulkanShaderUniformDeclaration::Type::None;
+			ShaderStruct* fieldStruct = nullptr;
+			switch (fieldType.basetype)
+			{
+			case spirv_cross::SPIRType::Struct:
+				fieldStruct = ParseShaderStruct(compiler, fieldType, fieldName, domain);
+				break;
+
+			case spirv_cross::SPIRType::Boolean:
+				type = VulkanShaderUniformDeclaration::Type::Boolean;
+				break;
+
+			case spirv_cross::SPIRType::Int:
+				type = VulkanShaderUniformDeclaration::Type::Int32;
+				break;
+
+			case spirv_cross::SPIRType::UInt:
+				type = VulkanShaderUniformDeclaration::Type::UInt32;
+				break;
+
+			case spirv_cross::SPIRType::Float:
+				if (fieldType.vecsize == 1)
+					type = VulkanShaderUniformDeclaration::Type::Float32;
+				else if (fieldType.vecsize == 2)
+					type = VulkanShaderUniformDeclaration::Type::Vec2;
+				else if (fieldType.vecsize == 3)
+					type = VulkanShaderUniformDeclaration::Type::Vec3;
+				else if (fieldType.vecsize == 2)
+					type = VulkanShaderUniformDeclaration::Type::Vec2;
+				else if (fieldType.vecsize == 4 && fieldType.columns == 1)
+					type = VulkanShaderUniformDeclaration::Type::Vec4;
+				else if (fieldType.vecsize == 4 && fieldType.columns == 3)
+					type = VulkanShaderUniformDeclaration::Type::Mat3;
+				else if (fieldType.vecsize == 4 && fieldType.columns == 4)
+					type = VulkanShaderUniformDeclaration::Type::Mat4;
+				break;
+			}
+
+			// Has at least 1 uniform
+			uint32_t count = 1;
+
+			// Check if is an array and his size
+			if (fieldType.array.size() > 0)
+			{
+				// Support only vectors now
+				count = fieldType.array[0];
+			}
+
+			VulkanShaderUniformDeclaration* field;
+			if (fieldStruct)
+				field = new VulkanShaderUniformDeclaration(fieldName, domain, fieldStruct, count);
+			else
+				field = new VulkanShaderUniformDeclaration(fieldName, domain, type, count);
+
+			ustruct->AddField(field);
+		}
+
+		return ustruct;
 	}
 	
 	VkDescriptorType VulkanShader::GetDescriptorType(VulkanShaderResourceDeclaration::Type type)

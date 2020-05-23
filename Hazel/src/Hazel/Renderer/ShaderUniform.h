@@ -27,6 +27,7 @@ namespace Hazel {
 	class ShaderUniformDeclaration
 	{
 		friend class Shader;
+		friend class ShaderStruct;
 
 	public:
 		virtual const std::string& GetName() const = 0;
@@ -54,5 +55,42 @@ namespace Hazel {
 	};
 
 	typedef std::vector<ShaderUniformBufferDeclaration*> ShaderUniformBufferList;
+
+	class ShaderStruct
+	{
+		friend class Shader;
+
+	public:
+		ShaderStruct(const std::string& name)
+			: m_Name(name), m_Size(0), m_Offset(0) {}
+
+		void AddField(ShaderUniformDeclaration* field)
+		{
+			m_Size += field->GetSize();
+			
+			uint32_t offset = 0;
+			if (m_Fields.size() > 0)
+			{
+				ShaderUniformDeclaration* previous = m_Fields.back();
+				offset = previous->GetOffset() + previous->GetSize();
+			}
+			field->SetOffset(offset);
+
+			m_Fields.push_back(field);
+		}
+
+		inline void SetOffset(uint32_t offset) { m_Offset = offset; }
+
+		inline const std::string& GetName() const { return m_Name; }
+		inline uint32_t GetSize() const { return m_Size; }
+		inline uint32_t GetOffset() const { return m_Offset; }
+		inline const ShaderUniformList& GetFields() const { return m_Fields; }
+
+	private:
+		std::string m_Name;
+		ShaderUniformList m_Fields;
+		uint32_t m_Size;
+		uint32_t m_Offset;
+	};
 
 }

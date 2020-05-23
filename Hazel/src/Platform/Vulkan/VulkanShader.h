@@ -9,6 +9,11 @@
 
 #define MAX_MAT_INSTANCES 20
 
+namespace spirv_cross {
+	class Compiler;
+	struct SPIRType;
+}
+
 namespace Hazel {
 
 	class HAZEL_API VulkanShader : public Shader
@@ -87,6 +92,8 @@ namespace Hazel {
 
 		void GetShaderResources(const std::vector<uint32_t>& spirv, ShaderDomain domain);
 		void GenerateShaderResources();
+
+		ShaderStruct* ParseShaderStruct(spirv_cross::Compiler& compiler, spirv_cross::SPIRType type, const std::string& name, ShaderDomain domain);
 
 		VkDescriptorType GetDescriptorType(VulkanShaderResourceDeclaration::Type type);
 		VkShaderStageFlags GetDescriptorStage(ShaderDomain domain);

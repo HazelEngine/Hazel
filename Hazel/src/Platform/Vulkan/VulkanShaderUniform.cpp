@@ -25,11 +25,19 @@ namespace Hazel {
 		m_Size = SizeOfUniformType(type) * count;
 	}
 
+	VulkanShaderUniformDeclaration::VulkanShaderUniformDeclaration(const std::string& name, ShaderDomain domain, ShaderStruct* ustruct, uint32_t count)
+		: m_Name(name), m_Domain(domain), m_Type(Type::Struct), m_Struct(ustruct), m_Count(count)
+	{
+		m_Size = m_Struct->GetSize() * count;
+	}
+
 	uint32_t VulkanShaderUniformDeclaration::SizeOfUniformType(Type type)
 	{
 		switch (type)
 		{
+			case VulkanShaderUniformDeclaration::Type::Boolean:	   return 1;
 			case VulkanShaderUniformDeclaration::Type::Int32:      return 4;
+			case VulkanShaderUniformDeclaration::Type::UInt32:     return 4;
 			case VulkanShaderUniformDeclaration::Type::Float32:    return 4;
 			case VulkanShaderUniformDeclaration::Type::Vec2:       return 4 * 2;
 			case VulkanShaderUniformDeclaration::Type::Vec3:       return 4 * 3;
@@ -43,6 +51,9 @@ namespace Hazel {
 
 	void VulkanShaderUniformDeclaration::SetOffset(uint32_t offset)
 	{
+		if (m_Type == Type::Struct)
+			m_Struct->SetOffset(offset);
+
 		m_Offset = offset;
 	}
 

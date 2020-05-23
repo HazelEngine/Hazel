@@ -57,11 +57,12 @@ namespace Hazel {
 
 		enum class Type
 		{
-			None, Float32, Vec2, Vec3, Vec4, Mat3, Mat4, Int32
+			None, Struct, Boolean, Int32, UInt32, Float32, Vec2, Vec3, Vec4, Mat3, Mat4
 		};
 
 	public:
 		VulkanShaderUniformDeclaration(const std::string& name, ShaderDomain domain, Type type, uint32_t count);
+		VulkanShaderUniformDeclaration(const std::string& name, ShaderDomain domain, ShaderStruct* ustruct, uint32_t count);
 
 		inline const std::string& GetName() const override { return m_Name; }
 		inline uint32_t GetSize() const override { return m_Size; }
@@ -84,7 +85,9 @@ namespace Hazel {
 		uint32_t m_Count;
 		uint32_t m_Offset;
 		ShaderDomain m_Domain;
+
 		Type m_Type;
+		ShaderStruct* m_Struct;
 	};
 
 	class VulkanShaderUniformBufferDeclaration : public ShaderUniformBufferDeclaration

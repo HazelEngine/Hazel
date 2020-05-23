@@ -492,6 +492,76 @@ namespace Hazel {
 		}
 	}
 
+	ShaderStruct* OpenGLShader::ParseShaderStruct(spirv_cross::Compiler& compiler, spirv_cross::SPIRType type, const std::string& name, ShaderDomain domain)
+	{
+		auto ustruct = new ShaderStruct(name);
+
+		for (size_t i = 0; i < type.member_types.size(); i++)
+		{
+			auto fieldType = compiler.get_type(type.member_types[i]);
+			auto fieldName = compiler.get_member_name(type.self, i);
+
+			// Get type
+			auto type = OpenGLShaderUniformDeclaration::Type::None;
+			ShaderStruct* fieldStruct = nullptr;
+			switch (fieldType.basetype)
+			{
+			case spirv_cross::SPIRType::Struct:
+				fieldStruct = ParseShaderStruct(compiler, fieldType, fieldName, domain);
+				break;
+
+			case spirv_cross::SPIRType::Boolean:
+				type = OpenGLShaderUniformDeclaration::Type::Boolean;
+				break;
+
+			case spirv_cross::SPIRType::Int:
+				type = OpenGLShaderUniformDeclaration::Type::Int32;
+				break;
+
+			case spirv_cross::SPIRType::UInt:
+				type = OpenGLShaderUniformDeclaration::Type::UInt32;
+				break;
+
+			case spirv_cross::SPIRType::Float:
+				if (fieldType.vecsize == 1)
+					type = OpenGLShaderUniformDeclaration::Type::Float32;
+				else if (fieldType.vecsize == 2)
+					type = OpenGLShaderUniformDeclaration::Type::Vec2;
+				else if (fieldType.vecsize == 3)
+					type = OpenGLShaderUniformDeclaration::Type::Vec3;
+				else if (fieldType.vecsize == 2)
+					type = OpenGLShaderUniformDeclaration::Type::Vec2;
+				else if (fieldType.vecsize == 4 && fieldType.columns == 1)
+					type = OpenGLShaderUniformDeclaration::Type::Vec4;
+				else if (fieldType.vecsize == 4 && fieldType.columns == 3)
+					type = OpenGLShaderUniformDeclaration::Type::Mat3;
+				else if (fieldType.vecsize == 4 && fieldType.columns == 4)
+					type = OpenGLShaderUniformDeclaration::Type::Mat4;
+				break;
+			}
+
+			// Has at least 1 uniform
+			uint32_t count = 1;
+
+			// Check if is an array and his size
+			if (fieldType.array.size() > 0)
+			{
+				// Support only vectors now
+				count = fieldType.array[0];
+			}
+
+			OpenGLShaderUniformDeclaration* field;
+			if (fieldStruct)
+				field = new OpenGLShaderUniformDeclaration(fieldName, domain, fieldStruct, count);
+			else
+				field = new OpenGLShaderUniformDeclaration(fieldName, domain, type, count);
+
+			ustruct->AddField(field);
+		}
+
+		return ustruct;
+	}
+
 	void OpenGLShader::GetShaderResources(const std::vector<uint32_t>& spirv, ShaderDomain domain)
 	{
 		spirv_cross::Compiler compiler(spirv);
@@ -614,19 +684,31 @@ namespace Hazel {
 			auto bufferDecl = CreateScope<OpenGLShaderUniformBufferDeclaration>(name, binding, domain);
 
 			// Loop through all members of the uniform buffer, and create a Uniform Declaration for each them
-			uint32_t index = 0;
 			const auto& spvBaseType = compiler.get_type(ubuffer.base_type_id);
-			for (auto typeId : spvBaseType.member_types)
+			for (size_t i = 0; i < spvBaseType.member_types.size(); i++)
 			{
-				auto memberType = compiler.get_type(typeId);
-				auto memberName = compiler.get_member_name(spvBaseType.self, index);
+				auto memberType = compiler.get_type(spvBaseType.member_types[i]);
+				auto memberName = compiler.get_member_name(spvBaseType.self, i);
 
 				// Get type
 				auto type = OpenGLShaderUniformDeclaration::Type::None;
+				ShaderStruct* ustruct = nullptr;
 				switch (memberType.basetype)
 				{
+				case spirv_cross::SPIRType::Struct:
+					ustruct = ParseShaderStruct(compiler, memberType, memberName, domain);
+					break;
+
+				case spirv_cross::SPIRType::Boolean:
+					type = OpenGLShaderUniformDeclaration::Type::Boolean;
+					break;
+
 				case spirv_cross::SPIRType::Int:
 					type = OpenGLShaderUniformDeclaration::Type::Int32;
+					break;
+
+				case spirv_cross::SPIRType::UInt:
+					type = OpenGLShaderUniformDeclaration::Type::UInt32;
 					break;
 
 				case spirv_cross::SPIRType::Float:
@@ -657,10 +739,13 @@ namespace Hazel {
 					count = memberType.array[0];
 				}
 
-				auto uniform = new OpenGLShaderUniformDeclaration(memberName, domain, type, count);
-				bufferDecl->PushUniform(uniform);
+				OpenGLShaderUniformDeclaration* uniform;
+				if (ustruct)
+					uniform = new OpenGLShaderUniformDeclaration(memberName, domain, ustruct, count);
+				else
+					uniform = new OpenGLShaderUniformDeclaration(memberName, domain, type, count);
 
-				index++;
+				bufferDecl->PushUniform(uniform);
 			}
 
 			// TODO: Define this string as static
