@@ -83,21 +83,9 @@ namespace Hazel {
 
 		m_IsAnimated = scene->mAnimations != nullptr;
 		if (m_IsAnimated)
-		{
-			m_MeshShader = Shader::Create(
-				"PBR_Anim",
-				"assets/Shaders/Compiled/PBR_Anim.vert.spv",
-				"assets/Shaders/Compiled/PBR.frag.spv"
-			);
-		}
+			m_MeshShader = Renderer::GetShaderLibrary()->Get("PBR_Anim");
 		else
-		{
-			m_MeshShader = Shader::Create(
-				"PBR_Static",
-				"assets/Shaders/Compiled/PBR_Static.vert.spv",
-				"assets/Shaders/Compiled/PBR.frag.spv"
-			);
-		}
+			m_MeshShader = Renderer::GetShaderLibrary()->Get("PBR_Static");
 		
 		m_BaseMaterial = Material::Create(m_MeshShader);
 		m_InverseTransform = glm::inverse(Mat4FromAssimpMat4(scene->mRootNode->mTransformation));

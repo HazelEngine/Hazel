@@ -8,6 +8,13 @@
 
 namespace Hazel {
 
+	struct RendererData
+	{
+		Scope<ShaderLibrary> ShaderLibrary;
+	};
+
+	static RendererData s_Data;
+
 	Scope<Renderer::SceneData> Renderer::s_SceneData = CreateScope<Renderer::SceneData>();
 
 	GraphicsContext* Renderer::s_Context = nullptr;
@@ -17,8 +24,21 @@ namespace Hazel {
 	void Renderer::Init(const Scope<GraphicsContext>& context)
 	{
 		s_Context = context.get();
+		s_Data.ShaderLibrary = CreateScope<ShaderLibrary>();
 
 		RendererAPI::InitAPI();
+
+		// Load static and skinned PBR Renderer shaders
+		Renderer::GetShaderLibrary()->Load(
+			"PBR_Static",
+			"assets/Shaders/Compiled/PBR_Static.vert.spv",
+			"assets/Shaders/Compiled/PBR.frag.spv"
+		);
+		Renderer::GetShaderLibrary()->Load(
+			"PBR_Anim",
+			"assets/Shaders/Compiled/PBR_Anim.vert.spv",
+			"assets/Shaders/Compiled/PBR.frag.spv"
+		);
 
 		s_RenderCommandBuffer = RenderCommandBuffer::Create();
 		
@@ -116,6 +136,11 @@ namespace Hazel {
 		RenderCommand::SetViewport(0, 0, width, height);
 		RenderCommand::Resize(0, 0, width, height);
 		//Renderer2D::OnResize();
+	}
+
+	const Scope<ShaderLibrary>& Renderer::GetShaderLibrary()
+	{
+		return s_Data.ShaderLibrary;
 	}
 
 }

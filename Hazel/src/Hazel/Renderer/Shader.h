@@ -71,4 +71,22 @@ namespace Hazel {
 		);
 	};
 
+	// This should be eventually be handled by the Asset Manager
+	class ShaderLibrary
+	{
+	public:
+		ShaderLibrary();
+		~ShaderLibrary();
+
+		void Add(const Ref<Shader>& shader);
+		void Load(const std::string& vsPath, const std::string& fsPath);
+		void Load(const std::string& name, const std::string& vsPath, const std::string& fsPath);
+		void Load(ShaderCreateInfo& info);
+
+		Ref<Shader>& Get(const std::string& name);
+
+	private:
+		std::unordered_map<std::string, Ref<Shader>> m_Shaders;
+	};
+
 }

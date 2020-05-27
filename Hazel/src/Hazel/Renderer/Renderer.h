@@ -64,6 +64,8 @@ namespace Hazel {
 
 		static void OnWindowResize(uint32_t width, uint32_t height);
 
+		static const Scope<ShaderLibrary>& GetShaderLibrary();
+
 		inline static GraphicsContext* GetContext() { return s_Context; }
 		inline static RendererAPI::API GetAPI() { return RendererAPI::GetAPI(); }
 
