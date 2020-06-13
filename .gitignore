@@ -3,11 +3,23 @@
 bin/
 bin-int/
 
+# Visual Studio generated files
+*.sln
+*.vcxproj
+*.vcxproj.filters
+
 # Files
 *.user
+*.dll
 
 # Generated profiling files
 HZProfile_*
 
 # Generated log files
 *.log
+
+# Generated Spir-V shader binary files
+*.spv
+
+# Generated ImGui config file
+*/imgui.ini
