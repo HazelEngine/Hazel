@@ -15,15 +15,40 @@ Ref<Pipeline> g_MeshPipeline, g_AnimMeshPipeline;
 Ref<Mesh> g_Mesh, g_AnimMesh;
 Light g_Light;
 
+Ref<TextureCube> m_DebugCube;
+Ref<MaterialInstance> m_DebugCubeMat;
+Ref<Pipeline> m_CubemapPipeline;
+
 RendererTestLayer::RendererTestLayer()
 	: Layer("RendererTestLayer"),
-	  m_PerspCameraController(45.0f, 1280.0f, 720.0f, 0.1f, 10000.0f) {}
+	  m_PerspCameraController(45.0f, 1280.0f, 720.0f, -10000.0f, 10000.0f) {}
 
 void RendererTestLayer::OnAttach()
 {
 	m_CheckerboardTex = Texture2D::Create("assets/Textures/Checkerboard_SemiTransparent.png");
 	m_PikachuTex = Texture2D::Create("assets/Textures/Pikachu.png");
 	m_EeveeTex = Texture2D::Create("assets/Textures/Eevee.png");
+
+	auto cubemapShader = Shader::Create(
+		"Cubemap",
+		"assets/Shaders/Compiled/Cubemap.vert.spv",
+		"assets/Shaders/Compiled/Cubemap.frag.spv"
+	);
+	m_DebugCube = TextureCube::Create("assets/Environments/Arches_E_PineTree_Radiance.tga");
+	m_DebugCubeMat = MaterialInstance::Create(Material::Create(cubemapShader));
+	m_DebugCubeMat->Set("u_Cubemap", m_DebugCube);
+	m_DebugCubeMat->Bind();
+
+	PipelineSpecification cubemapPSpec;
+	cubemapPSpec.Shader = cubemapShader;
+	cubemapPSpec.VertexBufferLayout = {
+		{ ShaderDataType::Float3, "a_Position" },
+		{ ShaderDataType::Float2, "a_TexCoord" }
+	};
+
+	m_CubemapPipeline = Pipeline::Create(cubemapPSpec);
+
+
 
 	// 1. Create Render Pipeline
 	// 2. Create Render Command Buffer
@@ -141,6 +166,10 @@ void RendererTestLayer::OnUpdate(Timestep ts)
 	glm::mat4 viewProj = m_PerspCameraController.GetCamera().GetViewProjectionMatrix();
 	glm::vec3 camPos = m_PerspCameraController.GetCamera().GetPosition();
 	m_Shader->SetUniformBuffer("u_SceneData", &viewProj, sizeof(glm::mat4));
+
+	glm::mat4 invViewProj = glm::inverse(viewProj);
+	m_CubemapPipeline->GetSpecification().Shader->SetUniformBuffer("u_SceneData", &invViewProj, sizeof(glm::mat4));
+	Renderer::SubmitFullscreenQuad(m_CubemapPipeline, m_DebugCubeMat);
 
 	glm::mat4 transform = glm::mat4(1.0f);
 	transform = glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, 0.0f, 0.0f));

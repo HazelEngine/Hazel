@@ -66,10 +66,10 @@ namespace Hazel {
 			Set(name, (const Ref<Texture>&)texture);
 		}
 
-		//void Set(const std::string& name, const Ref<TextureCube>& texture)
-		//{
-		//	Set(name, (const Ref<Texture>&)texture);
-		//}
+		void Set(const std::string& name, const Ref<TextureCube>& texture)
+		{
+			Set(name, (const Ref<Texture>&)texture);
+		}
 
 		uint32_t GetFlags() const { return m_Flags; }
 		void SetFlag(MaterialFlag flag) { m_Flags |= (uint32_t)flag; }
@@ -146,10 +146,10 @@ namespace Hazel {
 			Set(name, (const Ref<Texture>&)texture);
 		}
 
-		//void Set(const std::string& name, const Ref<TextureCube>& texture)
-		//{
-		//	Set(name, (const Ref<Texture>&)texture);
-		//}
+		void Set(const std::string& name, const Ref<TextureCube>& texture)
+		{
+			Set(name, (const Ref<Texture>&)texture);
+		}
 
 		uint32_t GetFlags() const { return m_Material->m_Flags; }
 		bool GetFlag(MaterialFlag flag) const { return (uint32_t)flag & m_Material->m_Flags; }

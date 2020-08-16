@@ -1,10 +1,11 @@
 #include "hzpch.h"
 #include "Renderer2D.h"
 
-#include "Hazel/Renderer/Renderer.h"
-#include "Hazel/Renderer/Shader.h"
-#include "Hazel/Renderer/Pipeline.h"
-#include "Hazel/Renderer/RenderCommand.h"
+#include <Hazel/Core/Color.h>
+#include <Hazel/Renderer/Renderer.h>
+#include <Hazel/Renderer/Shader.h>
+#include <Hazel/Renderer/Pipeline.h>
+#include <Hazel/Renderer/RenderCommand.h>
 
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -109,8 +110,8 @@ namespace Hazel {
 		s_Data->QuadVertexPositions[3] = { -0.5f,  0.5f, 0.0f, 1.0f };
 
 		// Create and set the white texture in the shader
-		uint32_t content = 0xFFFFFFFF;
-		s_Data->WhiteTexture = Texture2D::Create(&content, 1, 1, 4);
+		uint32_t whiteColor = Color::WhiteAlpha;
+		s_Data->WhiteTexture = Texture2D::Create(TextureFormat::RGBA, 1, 1, &whiteColor);
 		s_Data->TextureSlots[0] = s_Data->WhiteTexture;
 		s_Data->QuadPipeline->GetSpecification().Shader->BindTexture("u_Texture", 0, s_Data->WhiteTexture);
 	}

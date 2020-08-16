@@ -96,7 +96,9 @@ namespace Hazel {
 				sets.push_back(vk_Shader->GetGlobalDescriptorSet());
 				sets.insert(sets.end(), textureSets.begin(), textureSets.end());
 
-				bool hasOffset = vk_Shader->HasVSMaterialUniformBuffer() || vk_Shader->HasPSMaterialUniformBuffer();
+				bool hasVSMaterialBuffer = vk_Shader->HasVSMaterialUniformBuffer();
+				bool hasPSMaterialBuffer = vk_Shader->HasPSMaterialUniformBuffer();
+				bool hasMaterialBuffer = hasVSMaterialBuffer || hasPSMaterialBuffer;
 				uint32_t offset = 0;
 
 				vkCmdBindDescriptorSets(
@@ -106,8 +108,8 @@ namespace Hazel {
 					0,
 					sets.size(),
 					sets.data(),
-					hasOffset ? 1 : 0,
-					hasOffset ? &offset : nullptr
+					hasMaterialBuffer ? 1 : 0,
+					hasMaterialBuffer ? &offset : nullptr
 				);
 			}
 
@@ -180,7 +182,11 @@ namespace Hazel {
 				sets.push_back(vk_Shader->GetGlobalDescriptorSet());
 				sets.insert(sets.end(), textureSets.begin(), textureSets.end());
 
+				bool hasVSMaterialBuffer = vk_Shader->HasVSMaterialUniformBuffer();
+				bool hasPSMaterialBuffer = vk_Shader->HasPSMaterialUniformBuffer();
+				bool hasMaterialBuffer = hasVSMaterialBuffer || hasPSMaterialBuffer;
 				uint32_t offset = material->GetUniformBufferIndex() * vk_Shader->GetMaterialUniformBufferAlignment();
+				
 				vkCmdBindDescriptorSets(
 					drawCommandBuffer,
 					VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -188,8 +194,8 @@ namespace Hazel {
 					0,
 					sets.size(),
 					sets.data(),
-					1,
-					&offset
+					hasMaterialBuffer ? 1 : 0,
+					hasMaterialBuffer ? &offset : nullptr
 				);
 			}
 
@@ -276,7 +282,11 @@ namespace Hazel {
 				sets.push_back(vk_Shader->GetGlobalDescriptorSet());
 				sets.insert(sets.end(), textureSets.begin(), textureSets.end());
 
+				bool hasVSMaterialBuffer = vk_Shader->HasVSMaterialUniformBuffer();
+				bool hasPSMaterialBuffer = vk_Shader->HasPSMaterialUniformBuffer();
+				bool hasMaterialBuffer   = hasVSMaterialBuffer || hasPSMaterialBuffer;
 				uint32_t offset = materialInstance->GetUniformBufferIndex() * vk_Shader->GetMaterialUniformBufferAlignment();
+				
 				vkCmdBindDescriptorSets(
 					drawCommandBuffer,
 					VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -284,8 +294,8 @@ namespace Hazel {
 					0,
 					sets.size(),
 					sets.data(),
-					1,
-					&offset
+					hasMaterialBuffer ? 1 : 0,
+					hasMaterialBuffer ? &offset : nullptr
 				);
 			}
 
@@ -387,7 +397,11 @@ namespace Hazel {
 						sets.push_back(vk_Shader->GetGlobalDescriptorSet());
 						sets.insert(sets.end(), textureSets.begin(), textureSets.end());
 
+						bool hasVSMaterialBuffer = vk_Shader->HasVSMaterialUniformBuffer();
+						bool hasPSMaterialBuffer = vk_Shader->HasPSMaterialUniformBuffer();
+						bool hasMaterialBuffer = hasVSMaterialBuffer || hasPSMaterialBuffer;
 						uint32_t offset = material->GetUniformBufferIndex() * vk_Shader->GetMaterialUniformBufferAlignment();
+
 						vkCmdBindDescriptorSets(
 							drawCommandBuffer,
 							VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -395,8 +409,8 @@ namespace Hazel {
 							0,
 							sets.size(),
 							sets.data(),
-							1,
-							&offset
+							hasMaterialBuffer ? 1 : 0,
+							hasMaterialBuffer ? &offset : nullptr
 						);
 					}
 

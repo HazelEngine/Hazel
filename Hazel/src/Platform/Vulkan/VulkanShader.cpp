@@ -554,7 +554,7 @@ namespace Hazel {
 			for (uint32_t i = 0; i < resource->GetCount(); i++)
 			{
 				// Cast to Vulkan Texture, so we can get descriptor info (specific to VK)
-				auto vk_Texture = dynamic_cast<VulkanTexture2D*>(textures[i].get());
+				auto vk_Texture = dynamic_cast<VulkanBaseTexture*>(textures[i].get());
 				VkDescriptorImageInfo info = vk_Texture->GetDescriptorInfo();
 				imageInfos[i] = info;
 			}
@@ -682,7 +682,7 @@ namespace Hazel {
 					for (uint32_t i = 0; i < resource->GetCount(); i++)
 					{
 						// Cast to Vulkan Texture, so we can get descriptor info (specific to VK)
-						auto vk_Texture = dynamic_cast<VulkanTexture2D*>(textures[i].get());
+						auto vk_Texture = dynamic_cast<VulkanBaseTexture*>(textures[i].get());
 						VkDescriptorImageInfo info = vk_Texture->GetDescriptorInfo();
 						imageInfos[i] = info;
 					}
@@ -714,7 +714,7 @@ namespace Hazel {
 		spirv_cross::Compiler compiler(spirv);
 		spirv_cross::ShaderResources resources = compiler.get_shader_resources();
 
-		// samplerCube, sampler2D
+		// sampler2D, samplerCube
 		for (const auto& image : resources.sampled_images)
 		{	
 			unsigned set = compiler.get_decoration(image.id, spv::DecorationDescriptorSet);
@@ -752,7 +752,7 @@ namespace Hazel {
 			m_Resources.push_back(resourceDecl);
 		}
 
-		// texture2D
+		// texture2D, textureCube
 		for (const auto& image : resources.separate_images)
 		{
 			unsigned set = compiler.get_decoration(image.id, spv::DecorationDescriptorSet);
@@ -972,16 +972,24 @@ namespace Hazel {
 			if (vk_Resource->GetType() == VulkanShaderResourceDeclaration::Type::Image ||
 				vk_Resource->GetType() == VulkanShaderResourceDeclaration::Type::SampledImage)
 			{
-				// TODO: Set the default magenta texture /////////////////////////////
-				uint32_t content = 0xFFFF00FF;
-				Ref<Texture2D> defaultTex = Texture2D::Create(&content, 1, 1, 4);
-				//////////////////////////////////////////////////////////////////////
+				Ref<Texture> defaultTex;
+
+				if (vk_Resource->GetDimension() == VulkanShaderResourceDeclaration::Dimension::Texture2D)
+				{
+					// Set to default texture (1x1 magenta color)
+					defaultTex = Texture2D::Create(TextureFormat::RGBA, 1, 1);
+				}
+				else if (vk_Resource->GetDimension() == VulkanShaderResourceDeclaration::Dimension::TextureCube)
+				{
+					// Set to default cubemap texture (6 sides, 4x4 rand color each side)
+					defaultTex = TextureCube::Create(TextureFormat::RGBA, 4, 4);
+				}
 
 				std::vector<Ref<Texture>> textures(resource->GetCount());
 				
 				for (uint32_t i = 0; i < resource->GetCount(); i++)
 				{
-					textures[i] = (const Ref<Texture>&)defaultTex;
+					textures[i] = defaultTex;
 				}
 
 				m_Textures[resource->GetName()] = textures;

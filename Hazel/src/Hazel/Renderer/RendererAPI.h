@@ -6,6 +6,8 @@
 
 namespace Hazel {
 
+	using RendererId = uint32_t;
+
 	class HAZEL_API RendererAPI
 	{
 	public:

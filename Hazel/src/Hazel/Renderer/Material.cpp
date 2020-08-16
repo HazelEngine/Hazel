@@ -50,7 +50,8 @@ namespace Hazel {
 
 		for (auto tex = m_Textures.begin(); tex != m_Textures.end(); tex++)
 		{
-			m_Shader->BindTextureToPool(tex->first, tex->second);
+			if (tex->second)
+				m_Shader->BindTextureToPool(tex->first, tex->second);
 		}
 	}
 
@@ -171,7 +172,8 @@ namespace Hazel {
 
 		for (auto tex = m_Textures.begin(); tex != m_Textures.end(); tex++)
 		{
-			m_Material->m_Shader->BindTextureToPool(tex->first, tex->second);
+			if (tex->second)
+				m_Material->m_Shader->BindTextureToPool(tex->first, tex->second);
 		}
 	}
 

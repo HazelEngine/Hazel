@@ -10,26 +10,26 @@ namespace Hazel {
 	namespace {
 	
 		std::vector<uint32_t> LoadSpirvFile(const std::string& path)
-	{
-		FILE* file;
-		fopen_s(&file, path.c_str(), "rb");
-		if (!file)
 		{
-			HZ_CORE_ASSERT(false, "Failed to open SPIR-V file.")
-			return {};
+			FILE* file;
+			fopen_s(&file, path.c_str(), "rb");
+			if (!file)
+			{
+				HZ_CORE_ASSERT(false, "Failed to open SPIR-V file.")
+				return {};
+			}
+
+			fseek(file, 0, SEEK_END);
+			long len = ftell(file) / sizeof(uint32_t);
+			rewind(file);
+
+			std::vector<uint32_t> spirv(len);
+			if (fread(spirv.data(), sizeof(uint32_t), len, file) != size_t(len))
+				spirv.clear();
+
+			fclose(file);
+			return spirv;
 		}
-
-		fseek(file, 0, SEEK_END);
-		long len = ftell(file) / sizeof(uint32_t);
-		rewind(file);
-
-		std::vector<uint32_t> spirv(len);
-		if (fread(spirv.data(), sizeof(uint32_t), len, file) != size_t(len))
-			spirv.clear();
-
-		fclose(file);
-		return spirv;
-	}
 
 	}
 

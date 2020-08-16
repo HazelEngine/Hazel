@@ -11,6 +11,11 @@ namespace Hazel {
 	struct RendererData
 	{
 		Scope<ShaderLibrary> ShaderLibrary;
+
+		Ref<Pipeline> FullscreenQuadPipeline;
+		Ref<VertexBuffer> QuadVertexBuffer;
+		Ref<IndexBuffer> QuadIndexBuffer;
+		uint32_t QuadIndexCount;
 	};
 
 	static RendererData s_Data;
@@ -41,6 +46,49 @@ namespace Hazel {
 		);
 
 		s_RenderCommandBuffer = RenderCommandBuffer::Create();
+
+		// Create fullscreen quad
+
+		float x = -1, y = -1;
+		float width = 2, height = 2;
+
+		struct QuadVertex
+		{
+			glm::vec3 Position;
+			glm::vec2 TexCoord;
+		};
+
+		QuadVertex* data = new QuadVertex[4];
+
+		data[0].Position = { x, y, 0.1f };
+		data[0].TexCoord = { 0.0f, 0.0f };
+
+		data[1].Position = { x + width, y, 0.1f };
+		data[1].TexCoord = { 1.0f, 0.0f };
+
+		data[2].Position = { x + width, y + height, 0.1f };
+		data[2].TexCoord = { 1.0f, 1.0f };
+
+		data[3].Position = { x, y + height, 0.1f };
+		data[3].TexCoord = { 0.0f, 1.0f };
+
+		s_Data.QuadVertexBuffer = VertexBuffer::Create(data, 4 * sizeof(QuadVertex));
+		s_Data.QuadVertexBuffer->SetLayout({
+			{ ShaderDataType::Float3, "a_Position" },
+			{ ShaderDataType::Float2, "a_TexCoord" }
+		});
+
+		uint32_t indices[6] = { 0, 1, 2, 2, 3, 0 };
+		s_Data.QuadIndexBuffer = IndexBuffer::Create(indices, 6 * sizeof(uint32_t));
+		s_Data.QuadIndexCount = 6;
+
+		//PipelineSpecification spec;
+		//spec.Shader = shader;
+		//spec.VertexBufferLayout = {
+		//	{ ShaderDataType::Float3, "a_Position" },
+		//	{ ShaderDataType::Float2, "a_TexCoord" }
+		//};
+		//s_Data.FullscreenQuadPipeline = Pipeline::Create(spec);
 		
 		//RenderCommand::Init();
 		Renderer2D::Init();
@@ -114,6 +162,21 @@ namespace Hazel {
 
 		vertexArray->Bind();
 		RenderCommand::DrawIndexed(vertexArray);
+	}
+
+	void Renderer::SubmitFullscreenQuad(
+		const Ref<Pipeline>& pipeline,
+		const Ref<MaterialInstance>& material,
+		const glm::mat4& transform
+	)
+	{
+		Submit(
+			pipeline,
+			s_Data.QuadVertexBuffer,
+			s_Data.QuadIndexBuffer,
+			material,
+			s_Data.QuadIndexCount
+		);
 	}
 
 	void Renderer::SubmitMesh(

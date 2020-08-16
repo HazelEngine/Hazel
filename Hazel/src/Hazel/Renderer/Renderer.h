@@ -53,6 +53,12 @@ namespace Hazel {
 			const glm::mat4& transform = glm::mat4(1.0f)
 		);
 
+		static void SubmitFullscreenQuad(
+			const Ref<Pipeline>& pipeline,
+			const Ref<MaterialInstance>& material,
+			const glm::mat4& transform = glm::mat4(1.0f)
+		);
+
 		static void SubmitMesh(
 			const Ref<Pipeline>& pipeline,
 			const Ref<Mesh>& mesh,

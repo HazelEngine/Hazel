@@ -206,7 +206,7 @@ namespace Hazel {
 				m_Textures[name] = textures;
 
 				// Set the Sampler name
-				OpenGLTexture2D* gl_Texture = static_cast<OpenGLTexture2D*>(texture.get());
+				auto gl_Texture = dynamic_cast<OpenGLBaseTexture*>(texture.get());
 				gl_Texture->SetSamplerName(name + "[" + std::to_string(index) + "]");
 
 				return;
@@ -223,7 +223,7 @@ namespace Hazel {
 			if (resource->GetName() == name)
 			{
 				// Set the Sampler name
-				OpenGLTexture2D* gl_Texture = static_cast<OpenGLTexture2D*>(texture.get());
+				auto gl_Texture = dynamic_cast<OpenGLBaseTexture*>(texture.get());
 				gl_Texture->SetSamplerName(name);
 
 				return;
@@ -830,25 +830,33 @@ namespace Hazel {
 		// Textures
 		for (auto resource : m_Resources)
 		{
-			auto vk_Resource = dynamic_cast<OpenGLShaderResourceDeclaration*>(resource);
+			auto gl_Resource = dynamic_cast<OpenGLShaderResourceDeclaration*>(resource);
 			
 			// Only process Images and SampledImages
-			if (vk_Resource->GetType() == OpenGLShaderResourceDeclaration::Type::Image ||
-				vk_Resource->GetType() == OpenGLShaderResourceDeclaration::Type::SampledImage)
+			if (gl_Resource->GetType() == OpenGLShaderResourceDeclaration::Type::Image ||
+				gl_Resource->GetType() == OpenGLShaderResourceDeclaration::Type::SampledImage)
 			{
-				// TODO: Set the default magenta texture /////////////////////////////
-				uint32_t content = 0xFFFF00FF;
-				Ref<Texture2D> defaultTex = Texture2D::Create(&content, 1, 1, 4);
-				//////////////////////////////////////////////////////////////////////
+				Ref<Texture> defaultTex;
+
+				if (gl_Resource->GetDimension() == OpenGLShaderResourceDeclaration::Dimension::Texture2D)
+				{
+					// Set to default texture (1x1 magenta color)
+					defaultTex = Texture2D::Create(TextureFormat::RGB, 1, 1);
+				}
+				else if (gl_Resource->GetDimension() == OpenGLShaderResourceDeclaration::Dimension::TextureCube)
+				{
+					// Set to default cubemap texture (6 sides, 4x4 rand color each side)
+					defaultTex = TextureCube::Create(TextureFormat::RGBA, 4, 4);
+				}
 
 				std::vector<Ref<Texture>> textures(resource->GetCount());
 				
 				for (uint32_t i = 0; i < resource->GetCount(); i++)
 				{
-					textures[i] = (const Ref<Texture>&)defaultTex;
+					textures[i] = defaultTex;
 
 					// Set the sampler name, so the sampler int will be set correctly
-					OpenGLTexture2D* gl_Texture = static_cast<OpenGLTexture2D*>(textures[i].get());
+					auto gl_Texture = dynamic_cast<OpenGLBaseTexture*>(textures[i].get());
 					gl_Texture->SetSamplerName(resource->GetName() + "[" + std::to_string(i) + "]");
 				}
 
